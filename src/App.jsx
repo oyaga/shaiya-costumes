@@ -1,4 +1,5 @@
 import { useCallback, useEffect, useMemo, useState } from "react";
+import { Analytics } from "@vercel/analytics/react";
 import { TABS, CODE, norm } from "./catalog.js";
 import { DATA_BASE, DATA_DATE, REPO_URL } from "./config.js";
 import { LANGS, HTML_LANG, makeT, initialLang, saveLang } from "./i18n.js";
@@ -182,6 +183,7 @@ export default function App() {
         <p>{t("foot.hint")}</p>
         <p>{t("foot.legal")} <a href={REPO_URL} target="_blank" rel="noopener noreferrer">{t("foot.code")}</a></p>
       </footer>
+      <Analytics />
     </div>
   );
 }
