@@ -8,7 +8,7 @@ const STR = {
   pt: {
     "lang": "Idioma",
     "eyebrow": "Catálogo não oficial · dados do cliente de {date}",
-    "lede": "Fantasias, sets, armas, montarias, asas e pets do jogo em 3D e animados. No provador você monta o visual completo: escolha raça, set ou fantasia, arma, escudo, asa, pet e montaria e veja tudo junto.",
+    "lede": "Fantasias, sets, armas, montarias, asas e pets do jogo em 3D e animados. No provador você monta o visual completo: escolha raça e classe, set ou fantasia, arma, escudo, asa, pet e montaria e veja tudo junto.",
     "load.catalog": "Carregando catálogo…",
     "load.gear": "Carregando sets e armas…",
     "tab.set": "Sets", "tab.weapon": "Armas",
@@ -65,7 +65,7 @@ const STR = {
   es: {
     "lang": "Idioma",
     "eyebrow": "Catálogo no oficial · datos del cliente del {date}",
-    "lede": "Disfraces, conjuntos, armas, monturas, alas y mascotas del juego en 3D y animados. En el probador armas el look completo: elige raza, conjunto o disfraz, arma, escudo, alas, mascota y montura y míralo todo junto.",
+    "lede": "Disfraces, conjuntos, armas, monturas, alas y mascotas del juego en 3D y animados. En el probador armas el look completo: elige raza y clase, conjunto o disfraz, arma, escudo, alas, mascota y montura y míralo todo junto.",
     "load.catalog": "Cargando catálogo…",
     "load.gear": "Cargando conjuntos y armas…",
     "tab.set": "Conjuntos", "tab.weapon": "Armas",
@@ -122,7 +122,7 @@ const STR = {
   en: {
     "lang": "Language",
     "eyebrow": "Unofficial catalog · client data from {date}",
-    "lede": "The game's costumes, sets, weapons, mounts, wings and pets in animated 3D. In the fitting room you build the full look: pick race, set or costume, weapon, shield, wings, pet and mount and see it all together.",
+    "lede": "The game's costumes, sets, weapons, mounts, wings and pets in animated 3D. In the fitting room you build the full look: pick race and class, set or costume, weapon, shield, wings, pet and mount and see it all together.",
     "load.catalog": "Loading catalog…",
     "load.gear": "Loading sets and weapons…",
     "tab.set": "Sets", "tab.weapon": "Weapons",

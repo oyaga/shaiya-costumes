@@ -1,4 +1,4 @@
-import { RACES, SEXES } from "../catalog.js";
+import { RACES, SEXES, raceClasses } from "../catalog.js";
 import Seg from "./Seg.jsx";
 
 function Pick({ id, label, list, value, none, onChange, disabled }) {
@@ -28,6 +28,7 @@ export default function DressForm({ dress, lists, gear, onChange, t }) {
   return (
     <div className="form">
       <div className="field"><span className="label">{t("race")}</span><Seg label={t("race")} options={RACES.map((r) => [r, t("race." + r)])} value={dress.race} onChange={(race) => onChange({ race })} /></div>
+      <div className="field"><span className="label">{t("cls.label")}</span><Seg label={t("cls.label")} options={raceClasses(dress.race).map((c) => [c.id, t("cls." + c.id)])} value={dress.cls} onChange={(cls) => onChange({ cls })} /></div>
       <div className="field"><span className="label">{t("sex")}</span><Seg label={t("sex")} options={SEXES.map((s) => [s, t("sex." + s)])} value={dress.sex} onChange={(sex) => onChange({ sex })} /></div>
       <Pick id="d-costume" label={t("cat.costume")} list={lists.costume} value={dress.costume} none={t("none.costume")} onChange={(v) => onChange({ costume: v })} />
       <Pick id="d-set" label={t("cat.set")} list={armorSets} value={dress.set} none={t("none.set")} disabled={!gear} onChange={(v) => onChange({ set: v })} />

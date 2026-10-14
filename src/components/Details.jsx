@@ -1,4 +1,4 @@
-import { statChips, synText, CODE, CLASSES, itemFits } from "../catalog.js";
+import { statChips, synText, charCode, CLASSES, itemFits } from "../catalog.js";
 
 const nameOf = (list, k) => { const g = list.find((x) => x.k === k); return g ? g.name : null; };
 
@@ -39,7 +39,7 @@ function Synergy({ syn, t }) {
 
 // catalog = lista localizada (mesmos índices k do catálogo bruto); gear = sets/armas localizados
 export default function Details({ tab, catalog, lists, gear, sel, dress, onTry, t }) {
-  const who = t("who", { race: t("race." + dress.race), sex: t("who." + dress.sex) });
+  const who = t("who", { race: t("race." + dress.race), sex: t("who." + dress.sex) }) + (dress.cls ? ` (${t("cls." + dress.cls)})` : "");
 
   if (tab === "dress") {
     const cats = ["costume", "set", "weapon", "shield", "wing", "pet", "mount"];
@@ -75,7 +75,7 @@ export default function Details({ tab, catalog, lists, gear, sel, dress, onTry, 
   if (tab === "set") {
     const g = gear && gear.set[sel.set];
     if (!g) return null;
-    const code = CODE[dress.race][dress.sex];
+    const code = charCode(dress.race, dress.cls, dress.sex);
     return (
       <section className="details" aria-live="polite">
         <div className="label">{t("cat.set")} · {who}</div>

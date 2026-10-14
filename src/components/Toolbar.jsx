@@ -1,15 +1,14 @@
-import { TABS, CLASSES, LIGHT } from "../catalog.js";
+import { TABS, RACES, raceClasses } from "../catalog.js";
 
 const GEAR_TABS = ["set", "weapon"];
 
-// Filtro de classe (sets e armas): agrupado por facção, como na criação de personagem do jogo.
+// Filtro de classe (sets e armas): agrupado por raça, como na criação de personagem do jogo.
 function ClassFilter({ cls, onCls, t }) {
   const opt = (c) => <option key={c.id} value={c.id}>{t("cls." + c.id)}</option>;
   return (
     <select className="clsfilter" aria-label={t("cls.label")} value={cls || ""} onChange={(e) => onCls(e.target.value || null)}>
       <option value="">{t("cls.all")}</option>
-      <optgroup label={t("fac.light")}>{CLASSES.filter((c) => LIGHT.includes(c.race)).map(opt)}</optgroup>
-      <optgroup label={t("fac.fury")}>{CLASSES.filter((c) => !LIGHT.includes(c.race)).map(opt)}</optgroup>
+      {RACES.map((r) => <optgroup key={r} label={t("race." + r)}>{raceClasses(r).map(opt)}</optgroup>)}
     </select>
   );
 }

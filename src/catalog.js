@@ -2,19 +2,30 @@
 export const TABS = ["dress", "costume", "set", "weapon", "mount", "wing", "pet"];
 export const RACES = ["hu", "el", "vi", "de"];
 export const SEXES = ["m", "f"];
-export const CODE = { hu: { m: "humf", f: "huwf" }, el: { m: "elmr", f: "elwr" }, vi: { m: "vimr", f: "viwr" }, de: { m: "demf", f: "dewf" } };
+// Modelo do personagem por raça → corpo → gênero. Cada raça tem 2 corpos e a CLASSE escolhe qual: corpo 0 =
+// Lutador/Defensor, Ranger/Arqueiro, Assassino, Guerreiro/Guardião; corpo 1 = Clérigo, Mago, Pagão/Oráculo e
+// Caçador (o set e a postura mudam junto: o Mago veste a armadura no elmm, não no elmr do Ranger).
+export const CODES = {
+  hu: [{ m: "humf", f: "huwf" }, { m: "humm", f: "huwm" }],
+  el: [{ m: "elmr", f: "elwr" }, { m: "elmm", f: "elwm" }],
+  vi: [{ m: "vimr", f: "viwr" }, { m: "vimm", f: "viwm" }],
+  de: [{ m: "demf", f: "dewf" }, { m: "demr", f: "dewr" }],
+};
+export const charCode = (race, cls, sex) => CODES[race][(CLASSES.find((c) => c.id === cls && c.race === race) || {}).body || 0][sex];
 export const RACE_IX = { hu: 0, el: 1, vi: 2, de: 3 };
 export const LANG_IX = { pt: 0, es: 1, en: 2 };   // ordem dos nomes [pt, es, en] em gear.json
 
 export const norm = (s) => String(s).normalize("NFD").replace(/[̀-ͯ]/g, "").toLowerCase();
 
-// As 12 classes do jogo: bit da classe na ficha do item (o mesmo para o par Luz/Fúria) + a raça que a joga.
+// As 12 classes do jogo: bit da classe na ficha do item (o mesmo para o par Luz/Fúria), a raça que a joga e o
+// corpo do personagem (ver CODES).
 export const CLASSES = [
-  { id: "fighter", bit: 0, race: "hu" }, { id: "defender", bit: 1, race: "hu" }, { id: "priest", bit: 5, race: "hu" },
-  { id: "ranger", bit: 2, race: "el" }, { id: "archer", bit: 3, race: "el" }, { id: "mage", bit: 4, race: "el" },
-  { id: "warrior", bit: 0, race: "de" }, { id: "guardian", bit: 1, race: "de" }, { id: "hunter", bit: 3, race: "de" },
-  { id: "assassin", bit: 2, race: "vi" }, { id: "pagan", bit: 4, race: "vi" }, { id: "oracle", bit: 5, race: "vi" },
+  { id: "fighter", bit: 0, race: "hu", body: 0 }, { id: "defender", bit: 1, race: "hu", body: 0 }, { id: "priest", bit: 5, race: "hu", body: 1 },
+  { id: "ranger", bit: 2, race: "el", body: 0 }, { id: "archer", bit: 3, race: "el", body: 0 }, { id: "mage", bit: 4, race: "el", body: 1 },
+  { id: "warrior", bit: 0, race: "de", body: 0 }, { id: "guardian", bit: 1, race: "de", body: 0 }, { id: "hunter", bit: 3, race: "de", body: 1 },
+  { id: "assassin", bit: 2, race: "vi", body: 0 }, { id: "pagan", bit: 4, race: "vi", body: 1 }, { id: "oracle", bit: 5, race: "vi", body: 1 },
 ];
+export const raceClasses = (race) => CLASSES.filter((c) => c.race === race);
 export const LIGHT = ["hu", "el"];
 // "country" do item: 0 Humano, 1 Elfo, 2 Luz, 3 Deatheater, 4 Vail, 5 Fúria, 6 todos
 const FITS = { 0: ["hu"], 1: ["el"], 2: ["hu", "el"], 3: ["de"], 4: ["vi"], 5: ["de", "vi"] };

@@ -1,5 +1,5 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
-import { TABS, CODE, LANG_IX, CLASSES, gearFits, norm } from "./catalog.js";
+import { TABS, charCode, raceClasses, LANG_IX, CLASSES, gearFits, norm } from "./catalog.js";
 import { DATA_BASE, DATA_DATE, REPO_URL } from "./config.js";
 import { LANGS, HTML_LANG, makeT, initialLang, saveLang } from "./i18n.js";
 import Toolbar from "./components/Toolbar.jsx";
@@ -36,7 +36,12 @@ export default function App() {
   const [motion, setMotion] = useState("idle");
   const [spin, setSpin] = useState(() => !reducedMotion());
   const [sel, setSel] = useState({ costume: 0, set: null, weapon: null, mount: null, wing: null, pet: null });   // seleção das abas de catálogo
-  const [dress, setDress] = useState({ race: "hu", sex: "m", costume: null, set: null, weapon: null, shield: null, wing: null, pet: null, mount: null });
+  // cls = classe do personagem (escolhe o corpo: ver CODES em catalog.js). ?cls=mage&sex=f no endereço abre nela.
+  const [dress, setDress] = useState(() => {
+    const p = new URLSearchParams(location.search);
+    const c = CLASSES.find((x) => x.id === p.get("cls")) || CLASSES[0];
+    return { race: c.race, cls: c.id, sex: p.get("sex") === "f" ? "f" : "m", costume: null, set: null, weapon: null, shield: null, wing: null, pet: null, mount: null };
+  });
   const [dye, setDye] = useState({ costume: null, wing: null, pet: null, mount: null });   // {h, s, v} ou null, por categoria
   const [dyeTarget, setDyeTarget] = useState("costume");
   const [scene, setScene] = useState(null);   // {anims, dyeKeys} da cena montada
@@ -159,7 +164,7 @@ export default function App() {
       const g = data.catalog[sel.pet];
       return g ? { kind: "single", cat: "pet", file: "m/" + g.f } : null;
     }
-    const code = CODE[dress.race][dress.sex];
+    const code = charCode(dress.race, dress.cls, dress.sex);
     const s = { kind: "char", code, race: dress.race, costume: null };
     const setPath = (k) => { const g = gear && k != null ? gear.sets[k] : null; return g && g.f && g.codes.includes(code) ? `s/${g.f}/${code}.json` : null; };
     const wpn = (k) => { const g = gear && k != null ? gear.weapons[k] : null; return g ? { f: "w/" + g.f, kind: g.kind } : null; };
@@ -194,14 +199,23 @@ export default function App() {
   const hasMask = !!(scene && masks && target && (scene.dyeKeys[target] || []).some((k) => masks[k]));
 
   const onTab = useCallback((c) => { setTab(c); setQ(""); }, []);
-  // escolher a classe já mostra o item na raça que joga com ela (o gênero fica)
+  // escolher a classe já mostra o item na raça e no corpo dela (o gênero fica)
   const onCls = useCallback((id) => {
     setCls(id);
     if (!id) clsApplied.current = null;
     const c = CLASSES.find((x) => x.id === id);
-    if (c) setDress((s) => ({ ...s, race: c.race }));
+    if (c) setDress((s) => ({ ...s, race: c.race, cls: c.id }));
   }, []);
-  const onDress = useCallback((patch) => setDress((s) => ({ ...s, ...patch })), []);
+  // trocar a raça mantém o tipo de corpo quando dá (Mago → Pagão), senão cai na 1ª classe da raça
+  const onDress = useCallback((patch) => setDress((s) => {
+    const n = { ...s, ...patch };
+    if (patch.race && patch.race !== s.race && !patch.cls) {
+      const body = (CLASSES.find((c) => c.id === s.cls) || {}).body || 0;
+      const opts = raceClasses(patch.race);
+      n.cls = (opts.find((c) => c.body === body) || opts[0]).id;
+    }
+    return n;
+  }), []);
   const onTry = useCallback((cat, k) => { setDress((s) => ({ ...s, [cat]: k })); setTab("dress"); }, []);
   const onDye = useCallback((cat, p) => setDye((s) => ({ ...s, [cat]: p })), []);
   const onScene = useCallback((info) => setScene(info), []);
