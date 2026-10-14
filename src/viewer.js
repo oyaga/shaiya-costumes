@@ -137,9 +137,12 @@ export class Viewer {
         let meshes = base.parts.map((mesh) => ({ mesh, map: this.texture(charFile, mesh.t, base.tex[mesh.t]), dyeable: false }));   // corpo/rosto não recebem tintura
         if (spec.costume) {
           const cd = await this.getJSON(spec.costume);
-          const repl = new Set(cd.parts.map((p) => p.part));
-          if (repl.has("helmet")) repl.add("hair");
-          meshes = meshes.filter((m) => !repl.has(m.mesh.part)).concat(cd.parts.map((mesh) => ({ mesh, map: this.texture(spec.costume, mesh.t, cd.tex[mesh.t]) })));
+          // A fantasia substitui a roupa inteira: os 3DC dela cobrem o corpo todo (uma camisa de futebol vai dos pés ao
+          // pescoço) e uma vaga vazia no MLT não desenha nada — então as quatro peças da armadura base somem sempre.
+          // Só o capacete da fantasia (quando existe) substitui o cabelo; o rosto fica.
+          const hide = new Set(["upper", "hand", "lower", "foot"]);
+          if (cd.parts.some((p) => p.part === "helmet")) hide.add("hair");
+          meshes = meshes.filter((m) => !hide.has(m.mesh.part)).concat(cd.parts.map((mesh) => ({ mesh, map: this.texture(spec.costume, mesh.t, cd.tex[mesh.t]) })));
         }
         next.char = new Actor(meshes, base.anims); next.back = base.back;
         // matriz de encaixe emulada da função do jogo (WingPosition.xml): asa = M · osso · mundo
@@ -235,7 +238,7 @@ export class Viewer {
   setView(v) {
     if (!this.fit) return;
     const d = this.camera.position.distanceTo(this.fit.c);
-    const dir = v === "side" ? new THREE.Vector3(1, 0.1, 0) : new THREE.Vector3(0, 0.1, -1);
+    const dir = v === "side" ? new THREE.Vector3(1, 0.1, 0) : v === "back" ? new THREE.Vector3(0, 0.1, 1) : new THREE.Vector3(0, 0.1, -1);
     this.camera.position.copy(this.fit.c).addScaledVector(dir.normalize(), d);
   }
   setSpin(on) { this.controls.autoRotate = !!on; }

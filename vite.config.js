@@ -1,9 +1,10 @@
 import { defineConfig } from "vite";
 import react from "@vitejs/plugin-react";
 
-// Publicado no GitHub Pages em https://oyaga.github.io/shaiya-costumes/ → base com o nome do repo.
+// Base relativa: o mesmo build serve no GitHub Pages (https://oyaga.github.io/shaiya-costumes/) e na raiz de
+// outro host (Vercel etc.). Os dados são buscados por import.meta.env.BASE_URL + "data/".
 export default defineConfig({
-  base: "/shaiya-costumes/",
+  base: "./",
   plugins: [react()],
   build: { chunkSizeWarningLimit: 900 },
 });

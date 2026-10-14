@@ -50,6 +50,7 @@ export default function Stage({ spec, motion, spin, dye, anims, onMotion, onSpin
         <span className="vbtns" role="group" aria-label="Câmera">
           <button type="button" className="vbtn" onClick={() => view("front")}>Frente</button>
           <button type="button" className="vbtn" onClick={() => view("side")}>Lado</button>
+          <button type="button" className="vbtn" onClick={() => view("back")}>Costas</button>
           <button type="button" className="vbtn" aria-pressed={spin} onClick={() => onSpin(!spin)}>Girar</button>
         </span>
       </div>

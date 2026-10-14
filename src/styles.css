@@ -92,6 +92,8 @@ select { font: inherit; color: var(--fg); background: var(--surface); border: 1p
 .chip { font-size: var(--s--1); border: 1px solid var(--line); border-radius: 999px; padding: 2px 10px; color: var(--fg); }
 .chip b { font-weight: 500; color: var(--muted); margin-right: 4px; }
 
+.racebar { display: flex; flex-wrap: wrap; gap: 8px 14px; align-items: center; }
+
 /* pintura */
 .dyebox { display: grid; gap: 10px; padding: 12px; border: 1px solid var(--line); border-radius: 10px; min-width: 0; }
 .dyerow { display: flex; flex-wrap: wrap; gap: 8px; align-items: center; justify-content: space-between; }

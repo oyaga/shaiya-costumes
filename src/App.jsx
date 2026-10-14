@@ -7,8 +7,9 @@ import DressForm from "./components/DressForm.jsx";
 import Stage from "./components/Stage.jsx";
 import DyePanel from "./components/DyePanel.jsx";
 import Details from "./components/Details.jsx";
+import RaceSex from "./components/RaceSex.jsx";
 
-const VISUAL_TABS = ["mount", "wing", "pet"];
+const RIDER_TABS = ["costume", "mount", "wing"];   // abas que mostram o item num personagem (raça/gênero à escolha)
 const DYE_CATS = ["costume", "wing", "pet", "mount"];
 const reducedMotion = () => typeof matchMedia === "function" && matchMedia("(prefers-reduced-motion: reduce)").matches;
 
@@ -75,14 +76,21 @@ export default function App() {
   // o que a vitrine mostra
   const spec = useMemo(() => {
     if (!data) return null;
-    if (VISUAL_TABS.includes(tab)) {
-      const g = data.catalog[sel[tab]];
-      return g ? { kind: "single", cat: tab, file: "m/" + g.f } : null;
+    if (tab === "pet") {   // pet aparece sozinho
+      const g = data.catalog[sel.pet];
+      return g ? { kind: "single", cat: "pet", file: "m/" + g.f } : null;
     }
     const code = CODE[dress.race][dress.sex];
+    const s = { kind: "char", code, race: dress.race, costume: null };
+    if (tab === "mount" || tab === "wing") {   // corpo base (armadura inicial) + o item
+      const g = data.catalog[sel[tab]];
+      if (!g) return null;
+      s[tab] = "m/" + g.f;
+      return s;
+    }
     const costumeK = tab === "costume" ? sel.costume : dress.costume;
     const c = costumeK != null ? data.costumes.find((x) => x.k === costumeK) : null;
-    const s = { kind: "char", code, race: dress.race, costume: c ? `k/${c.f}/${code}.json` : null };
+    s.costume = c ? `k/${c.f}/${code}.json` : null;
     if (tab === "dress") for (const f of ["wing", "pet", "mount"]) { const k = dress[f]; if (k != null && data.catalog[k]) s[f] = "m/" + data.catalog[k].f; }
     return s;
   }, [data, tab, sel, dress]);
@@ -120,8 +128,9 @@ export default function App() {
             </div>
             <div className="viewcol">
               <Stage spec={spec} motion={motion} spin={spin} dye={dye} anims={scene && scene.anims} onMotion={setMotion} onSpin={setSpin} onScene={onScene} onMasks={onMasks} />
+              {RIDER_TABS.includes(tab) && <RaceSex dress={dress} onDress={onDress} />}
               <DyePanel targets={dyeTargets} target={target} onTarget={setDyeTarget} dye={dye} onChange={onDye} hasMask={hasMask} />
-              <Details tab={tab} data={data} lists={lists} sel={sel} dress={dress} onDress={onDress} onTry={onTry} />
+              <Details tab={tab} data={data} lists={lists} sel={sel} dress={dress} onTry={onTry} />
             </div>
           </div>
         </>
