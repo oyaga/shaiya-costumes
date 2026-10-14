@@ -100,7 +100,7 @@ export class Viewer {
     return this.fileCache.get(path);
   }
   decodeFile(j) {
-    const out = { tex: j.tex || {}, anims: {}, ride: j.ride, back: j.back, wing: j.wing, stance: j.stance, hands: j.hands, parts: [] };
+    const out = { tex: j.tex || {}, anims: {}, ride: j.ride, back: j.back, wing: j.wing, stance: j.stance, att: j.att, parts: [] };
     for (const [k, a] of Object.entries(j.anims || {})) { try { out.anims[k] = decodeAnim(a); } catch (e) { /* animação corrompida: ignora */ } }
     if (j.parts) out.parts = j.parts.map(decodeMesh);
     return out;
@@ -153,22 +153,32 @@ export class Viewer {
         }
         let anims = base.anims;
         if (spec.weapon || spec.shield) {
-          // Postura com arma (animações extras do personagem) + armas presas ao osso da mão: mundo = G[mão] · personagem.
+          // Postura com arma (animações extras do personagem) + o encaixe que o próprio jogo usa (IT2, sub_14012D8C0):
+          // cada arma traz, por raça/gênero, o osso e a matriz local; mundo = local · G[osso] · personagem.
+          // a10 = 0 arma principal; 1 = arco/besta e mão esquerda (2ª arma, escudo).
           const stFile = `c/${spec.code}-st.json`, st = await this.getJSON(stFile);
           anims = { ...base.anims, ...st.anims };
           const kind = spec.weapon ? spec.weapon.kind : "sh";
           const [idleKey, runKey] = (st.stance && st.stance[kind]) || [];
           next.stanceKeys = { idle: idleKey, run: runKey };
-          next.hands = st.hands || [0, 0];
-          const both = kind === "du" || kind === "kn", leftOnly = kind === "bow";
+          const fit = (d, a10) => {
+            const e = d.att && d.att[spec.code] && d.att[spec.code][a10];
+            return e ? { b: e.b, L: new Float32Array(e.m) } : null;
+          };
           if (spec.weapon) {
             const wd = await this.getJSON(spec.weapon.f);
-            if (!leftOnly) next.wr = this.actorFrom(spec.weapon.f, wd);
-            if (both || leftOnly) next.wl = this.actorFrom(spec.weapon.f, wd);
+            const main = fit(wd, kind === "bow" || kind === "crbo" ? 1 : 0);
+            if (main) { next.wr = this.actorFrom(spec.weapon.f, wd); next.wrFit = main; }
+            if (kind === "du" || kind === "kn") {   // duas armas / garras: a mesma arma também na mão esquerda
+              const left = fit(wd, 1);
+              if (left) { next.wl = this.actorFrom(spec.weapon.f, wd); next.wlFit = left; }
+            }
           }
-          if (spec.shield && !next.wl) {   // a mão esquerda já ocupada (duas armas, garras, arco) não leva escudo
+          // escudo só com arma de uma mão (ou sem arma), como no jogo
+          if (spec.shield && !next.wl && !["th", "du", "kn", "sp", "bow", "crbo"].includes(kind)) {
             const sd = await this.getJSON(spec.shield.f);
-            next.wl = this.actorFrom(spec.shield.f, sd);
+            const left = fit(sd, 1);
+            if (left) { next.wl = this.actorFrom(spec.shield.f, sd); next.wlFit = left; }
           }
         }
         next.char = new Actor(meshes, anims); next.back = base.back;
@@ -236,8 +246,8 @@ export class Viewer {
       Wc = translation(p[0], p[1], p[2]);
     }
     a.char.update(sec, Wc);
-    if (a.wr) a.wr.update(sec, a.char.boneMatrix(a.hands[0]));
-    if (a.wl) a.wl.update(sec, a.char.boneMatrix(a.hands[1]));
+    if (a.wr) a.wr.update(sec, mul(a.wrFit.L, a.char.boneMatrix(a.wrFit.b), new Float32Array(16)));
+    if (a.wl) a.wl.update(sec, mul(a.wlFit.L, a.char.boneMatrix(a.wlFit.b), new Float32Array(16)));
     if (a.wing) {
       if (a.wingFit) a.wing.update(sec, mul(a.wingFit.L, a.char.boneMatrix(a.wingFit.bone), new Float32Array(16)));
       else { const p = a.char.bonePos(a.back); a.wing.update(sec, translation(p[0], p[1], p[2])); }
