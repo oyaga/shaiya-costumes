@@ -1,5 +1,5 @@
-import { useCallback, useEffect, useMemo, useState } from "react";
-import { TABS, CODE, LANG_IX, norm } from "./catalog.js";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
+import { TABS, CODE, LANG_IX, CLASSES, gearFits, norm } from "./catalog.js";
 import { DATA_BASE, DATA_DATE, REPO_URL } from "./config.js";
 import { LANGS, HTML_LANG, makeT, initialLang, saveLang } from "./i18n.js";
 import Toolbar from "./components/Toolbar.jsx";
@@ -32,6 +32,7 @@ export default function App() {
   const [error, setError] = useState(null);
   const [tab, setTab] = useState("dress");
   const [q, setQ] = useState("");
+  const [cls, setCls] = useState(null);         // filtro de classe dos sets/armas (id de CLASSES ou null)
   const [motion, setMotion] = useState("idle");
   const [spin, setSpin] = useState(() => !reducedMotion());
   const [sel, setSel] = useState({ costume: 0, set: null, weapon: null, mount: null, wing: null, pet: null });   // seleção das abas de catálogo
@@ -132,11 +133,24 @@ export default function App() {
     history.replaceState(null, "", "#" + h);
   }, [data, tab, sel]);
 
+  const clsObj = cls ? CLASSES.find((c) => c.id === cls) : null;
   const rows = useMemo(() => {
     if (!lists || tab === "dress") return [];
     const nq = norm(q.trim());
-    return lists[tab].filter((g) => !nq || g.hay.includes(nq));
-  }, [lists, tab, q]);
+    const byCls = clsObj && GEAR_TABS.includes(tab);
+    return lists[tab].filter((g) => (!nq || g.hay.includes(nq)) && (!byCls || gearFits(g, clsObj)));
+  }, [lists, tab, q, clsObj]);
+
+  // ao escolher uma classe: abre o primeiro set de armadura e a primeira arma dela (só na troca, não a cada busca)
+  const clsApplied = useRef(null);
+  useEffect(() => {
+    if (!lists || !clsObj || !lists.set.length || clsApplied.current === clsObj.id) return;
+    clsApplied.current = clsObj.id;
+    const sets = lists.set.filter((g) => gearFits(g, clsObj));
+    const set = sets.find((g) => g.f) || sets[0];
+    const wpn = lists.weapon.find((g) => gearFits(g, clsObj));
+    setSel((s) => ({ ...s, set: set ? set.k : s.set, weapon: wpn ? wpn.k : s.weapon }));
+  }, [clsObj, lists]);
 
   // o que a vitrine mostra
   const spec = useMemo(() => {
@@ -180,6 +194,13 @@ export default function App() {
   const hasMask = !!(scene && masks && target && (scene.dyeKeys[target] || []).some((k) => masks[k]));
 
   const onTab = useCallback((c) => { setTab(c); setQ(""); }, []);
+  // escolher a classe já mostra o item na raça que joga com ela (o gênero fica)
+  const onCls = useCallback((id) => {
+    setCls(id);
+    if (!id) clsApplied.current = null;
+    const c = CLASSES.find((x) => x.id === id);
+    if (c) setDress((s) => ({ ...s, race: c.race }));
+  }, []);
   const onDress = useCallback((patch) => setDress((s) => ({ ...s, ...patch })), []);
   const onTry = useCallback((cat, k) => { setDress((s) => ({ ...s, [cat]: k })); setTab("dress"); }, []);
   const onDye = useCallback((cat, p) => setDye((s) => ({ ...s, [cat]: p })), []);
@@ -205,7 +226,7 @@ export default function App() {
 
       {data && lists && (
         <>
-          <Toolbar t={t} tab={tab} onTab={onTab} q={q} onQ={setQ} counts={counts} />
+          <Toolbar t={t} tab={tab} onTab={onTab} q={q} onQ={setQ} cls={cls} onCls={onCls} counts={counts} />
           <div className="layout">
             <div className="leftcol">
               {tab === "dress"

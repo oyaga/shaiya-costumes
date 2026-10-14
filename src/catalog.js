@@ -8,6 +8,23 @@ export const LANG_IX = { pt: 0, es: 1, en: 2 };   // ordem dos nomes [pt, es, en
 
 export const norm = (s) => String(s).normalize("NFD").replace(/[̀-ͯ]/g, "").toLowerCase();
 
+// As 12 classes do jogo: bit da classe na ficha do item (o mesmo para o par Luz/Fúria) + a raça que a joga.
+export const CLASSES = [
+  { id: "fighter", bit: 0, race: "hu" }, { id: "defender", bit: 1, race: "hu" }, { id: "priest", bit: 5, race: "hu" },
+  { id: "ranger", bit: 2, race: "el" }, { id: "archer", bit: 3, race: "el" }, { id: "mage", bit: 4, race: "el" },
+  { id: "warrior", bit: 0, race: "de" }, { id: "guardian", bit: 1, race: "de" }, { id: "hunter", bit: 3, race: "de" },
+  { id: "assassin", bit: 2, race: "vi" }, { id: "pagan", bit: 4, race: "vi" }, { id: "oracle", bit: 5, race: "vi" },
+];
+export const LIGHT = ["hu", "el"];
+// "country" do item: 0 Humano, 1 Elfo, 2 Luz, 3 Deatheater, 4 Vail, 5 Fúria, 6 todos
+const FITS = { 0: ["hu"], 1: ["el"], 2: ["hu", "el"], 3: ["de"], 4: ["vi"], 5: ["de", "vi"] };
+export function itemFits(st, c) {
+  if (!st || !st.cls || !(st.cls & (1 << c.bit))) return false;
+  const ok = FITS[st.ctry];
+  return !ok || ok.includes(c.race);
+}
+export const gearFits = (g, c) => g.items.some((x) => itemFits(x[3], c));
+
 // Atributos do DBItemData + buffs que só existem na descrição.
 const ATTR = ["str", "dex", "rec", "int", "wis", "luc"];
 export function statChips(st, type, t, gear) {

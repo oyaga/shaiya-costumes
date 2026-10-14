@@ -38,6 +38,14 @@ h1 { font-family: var(--display); font-weight: 400; font-size: var(--s3); line-h
 .tab:focus-visible, .row:focus-visible, .search:focus-visible, .vbtn:focus-visible, .btn:focus-visible, select:focus-visible, .seg button:focus-visible, .sw:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
 .search { font: inherit; color: var(--fg); background: var(--surface); border: 1px solid var(--line); border-radius: 8px; padding: 8px 12px; width: min(100%, 340px); }
 .search::placeholder { color: var(--muted); }
+.filters { display: flex; gap: 8px; align-items: center; min-width: 0; max-width: 100%; }
+.clsfilter { width: auto; flex: 0 1 auto; min-width: 0; }
+.filters .clsfilter + .search { width: 300px; flex: 0 1 300px; min-width: 120px; }
+@media (max-width: 640px) {
+  .filters { flex-wrap: wrap; width: 100%; }
+  .filters .clsfilter, .filters .clsfilter + .search { flex: 1 1 100%; width: 100%; }
+}
+.classes { font-size: 0.75rem; color: var(--muted); }
 
 .layout { display: grid; grid-template-columns: minmax(0, 340px) minmax(0, 1fr); gap: 24px; align-items: start; }
 .leftcol { min-width: 0; display: grid; gap: 16px; }

@@ -1,6 +1,13 @@
-import { statChips, synText, CODE } from "../catalog.js";
+import { statChips, synText, CODE, CLASSES, itemFits } from "../catalog.js";
 
 const nameOf = (list, k) => { const g = list.find((x) => x.k === k); return g ? g.name : null; };
+
+// Classes que usam o item (bit de classe + raça/facção da ficha)
+function classLine(st, t) {
+  const ok = CLASSES.filter((c) => itemFits(st, c));
+  if (!ok.length) return null;
+  return t("cls.uses", { c: ok.length === CLASSES.length ? t("cls.all").toLowerCase() : ok.map((c) => t("cls." + c.id)).join(", ") });
+}
 
 function Items({ items, t, gear }) {
   return (
@@ -11,6 +18,7 @@ function Items({ items, t, gear }) {
           <div className="chips">
             {statChips(x[3], x[0], t, gear).map((c, j) => <span key={j} className={c.good ? "stat good" : "stat"}>{c.text}</span>)}
           </div>
+          {gear && classLine(x[3], t) && <div className="classes">{classLine(x[3], t)}</div>}
           {x[4] && <p className="itdesc">{x[4]}</p>}
         </li>
       ))}
