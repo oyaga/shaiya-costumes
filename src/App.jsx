@@ -1,5 +1,5 @@
 import { useCallback, useEffect, useMemo, useState } from "react";
-import { TABS, CODE, norm } from "./catalog.js";
+import { TABS, CODE, LANG_IX, norm } from "./catalog.js";
 import { DATA_BASE, DATA_DATE, REPO_URL } from "./config.js";
 import { LANGS, HTML_LANG, makeT, initialLang, saveLang } from "./i18n.js";
 import Toolbar from "./components/Toolbar.jsx";
@@ -11,7 +11,8 @@ import Details from "./components/Details.jsx";
 import RaceSex from "./components/RaceSex.jsx";
 import Seg from "./components/Seg.jsx";
 
-const RIDER_TABS = ["costume", "mount", "wing"];   // abas que mostram o item num personagem (raça/gênero à escolha)
+const RIDER_TABS = ["costume", "set", "weapon", "mount", "wing"];   // abas que mostram o item num personagem (raça/gênero à escolha)
+const GEAR_TABS = ["set", "weapon"];                                // vêm de gear.json (carregado à parte)
 const DYE_CATS = ["costume", "wing", "pet", "mount"];
 const reducedMotion = () => typeof matchMedia === "function" && matchMedia("(prefers-reduced-motion: reduce)").matches;
 const getJSON = (path) => fetch(DATA_BASE + path).then((r) => { if (!r.ok) throw new Error("HTTP " + r.status); return r.json(); });
@@ -27,18 +28,20 @@ export default function App() {
   const [tr, setTr] = useState(null);           // public/data/i18n/<lang>.json (null = português)
   const [search, setSearch] = useState(null);   // nomes nos 3 idiomas, para a busca
   const [data, setData] = useState(null);
+  const [gear, setGear] = useState(null);       // gear.json: sets e armas (null = carregando, false = falhou)
   const [error, setError] = useState(null);
   const [tab, setTab] = useState("dress");
   const [q, setQ] = useState("");
   const [motion, setMotion] = useState("idle");
   const [spin, setSpin] = useState(() => !reducedMotion());
-  const [sel, setSel] = useState({ costume: 0, mount: null, wing: null, pet: null });   // seleção das abas de catálogo
-  const [dress, setDress] = useState({ race: "hu", sex: "m", costume: null, wing: null, pet: null, mount: null });
+  const [sel, setSel] = useState({ costume: 0, set: null, weapon: null, mount: null, wing: null, pet: null });   // seleção das abas de catálogo
+  const [dress, setDress] = useState({ race: "hu", sex: "m", costume: null, set: null, weapon: null, shield: null, wing: null, pet: null, mount: null });
   const [dye, setDye] = useState({ costume: null, wing: null, pet: null, mount: null });   // {h, s, v} ou null, por categoria
   const [dyeTarget, setDyeTarget] = useState("costume");
   const [scene, setScene] = useState(null);   // {anims, dyeKeys} da cena montada
   const [masks, setMasks] = useState(null);
   const t = useMemo(() => makeT(lang), [lang]);
+  const li = LANG_IX[lang] ?? 0;
 
   // catálogo + estado inicial (hash e um visual de exemplo no provador)
   useEffect(() => {
@@ -52,8 +55,8 @@ export default function App() {
         const pick = (name, list) => { const x = list.find((i) => norm(i.name).includes(norm(name))); return x ? x.k : null; };
         setDress((s) => ({ ...s, costume: pick("Bobo", costumes), wing: pick("Pesadelo antes", byCat("wing")), pet: pick("Espantalho de Halloween", byCat("pet")) }));
         const first = (c) => (byCat(c)[0] ? byCat(c)[0].k : null);
-        const next = { costume: 0, mount: first("mount"), wing: first("wing"), pet: first("pet") };
-        const h = location.hash.slice(1), m = h.match(/^(costume|mount|wing|pet)-(\d+)$/);
+        const next = { costume: 0, set: null, weapon: null, mount: first("mount"), wing: first("wing"), pet: first("pet") };
+        const h = location.hash.slice(1), m = h.match(/^(costume|set|weapon|mount|wing|pet)-(\d+)$/);
         if (m) { setTab(m[1]); next[m[1]] = +m[2]; }
         else if (TABS.includes(h)) setTab(h);
         setSel(next);
@@ -61,6 +64,7 @@ export default function App() {
       })
       .catch((e) => { if (!dead) setError(e); });
     getJSON("i18n/search.json").then(setSearch).catch(() => { /* busca fica só em PT */ });
+    getJSON("gear.json").then((g) => { if (!dead) setGear(g); }).catch(() => { if (!dead) setGear(false); });
     return () => { dead = true; };
   }, []);
 
@@ -86,18 +90,40 @@ export default function App() {
     return { catalog: mk(data.catalog, "catalog"), costumes: mk(data.costumes, "costumes") };
   }, [data, tr, search]);
 
+  // sets e armas: gear.json já traz nome/descrição em [pt, es, en]; nome de set só existe em inglês no cliente
+  const gearL = useMemo(() => {
+    if (!gear) return null;
+    const it = (x) => [x[0], x[1], x[2][li] || x[2][0], x[3], x[4][li] || x[4][0]];
+    const names = (g) => g.items.flatMap((x) => x[2]);
+    return {
+      set: gear.sets.map((g, k) => ({ ...g, k, cat: "set", items: g.items.map(it), hay: norm([g.name, ...names(g)].join(" ")) })),
+      weapon: gear.weapons.map((g, k) => ({ ...g, k, cat: "weapon", name: g.name[li] || g.name[0], items: g.items.map(it), hay: norm([...g.name, ...names(g)].join(" ")) })),
+    };
+  }, [gear, li]);
+
   // ordem alfabética do idioma escolhido (ignora o prefixo [SP]/(SP))
   const lists = useMemo(() => {
     if (!loc) return null;
     const key = (g) => g.name.replace(/^[[(]SP[\])]\s*/i, "");
     const sorted = (a) => [...a].sort((x, y) => key(x).localeCompare(key(y), lang, { sensitivity: "base" }));
+    const weapons = gearL ? sorted(gearL.weapon) : [];
     return {
       costume: sorted(loc.costumes),
+      set: gearL ? sorted(gearL.set) : [],
+      weapon: weapons,
+      wpn: weapons.filter((g) => g.kind !== "sh"),
+      shield: weapons.filter((g) => g.kind === "sh"),
       mount: sorted(loc.catalog.filter((g) => g.cat === "mount")),
       wing: sorted(loc.catalog.filter((g) => g.cat === "wing")),
       pet: sorted(loc.catalog.filter((g) => g.cat === "pet")),
     };
-  }, [loc, lang]);
+  }, [loc, gearL, lang]);
+
+  // aba de set/arma aberta sem seleção (antes do gear.json chegar): escolhe o primeiro da lista
+  useEffect(() => {
+    if (!lists) return;
+    for (const c of GEAR_TABS) if (sel[c] == null && lists[c][0]) setSel((s) => ({ ...s, [c]: lists[c][0].k }));
+  }, [lists, sel]);
 
   // endereço reflete o item aberto (#mount-12, #dress…)
   useEffect(() => {
@@ -121,22 +147,37 @@ export default function App() {
     }
     const code = CODE[dress.race][dress.sex];
     const s = { kind: "char", code, race: dress.race, costume: null };
+    const setPath = (k) => { const g = gear && k != null ? gear.sets[k] : null; return g && g.f && g.codes.includes(code) ? `s/${g.f}/${code}.json` : null; };
+    const wpn = (k) => { const g = gear && k != null ? gear.weapons[k] : null; return g ? { f: "w/" + g.f, kind: g.kind } : null; };
     if (tab === "mount" || tab === "wing") {   // corpo base (armadura inicial) + o item
       const g = data.catalog[sel[tab]];
       if (!g) return null;
       s[tab] = "m/" + g.f;
       return s;
     }
+    if (tab === "set") { if (!gear) return null; s.set = setPath(sel.set); return s; }
+    if (tab === "weapon") {
+      const w = wpn(sel.weapon);
+      if (!w) return gear ? s : null;
+      if (w.kind === "sh") s.shield = w; else s.weapon = w;
+      return s;
+    }
     const costumeK = tab === "costume" ? sel.costume : dress.costume;
     const c = costumeK != null ? data.costumes.find((x) => x.k === costumeK) : null;
     s.costume = c ? `k/${c.f}/${code}.json` : null;
-    if (tab === "dress") for (const f of ["wing", "pet", "mount"]) { const k = dress[f]; if (k != null && data.catalog[k]) s[f] = "m/" + data.catalog[k].f; }
+    if (tab === "dress") {
+      for (const f of ["wing", "pet", "mount"]) { const k = dress[f]; if (k != null && data.catalog[k]) s[f] = "m/" + data.catalog[k].f; }
+      if (!s.costume) s.set = setPath(dress.set);   // a fantasia cobre a armadura, como no jogo
+      const w = wpn(dress.weapon), sh = wpn(dress.shield);
+      if (w) s.weapon = w;
+      if (sh) s.shield = sh;
+    }
     return s;
-  }, [data, tab, sel, dress]);
+  }, [data, gear, tab, sel, dress]);
 
-  const dyeTargets = tab === "dress" ? DYE_CATS.filter((c) => dress[c] != null) : tab === "costume" ? ["costume"] : [tab];
+  const dyeTargets = tab === "dress" ? DYE_CATS.filter((c) => dress[c] != null) : tab === "costume" ? ["costume"] : DYE_CATS.includes(tab) ? [tab] : [];
   const target = dyeTargets.includes(dyeTarget) ? dyeTarget : dyeTargets[0];
-  const hasMask = !!(scene && masks && (scene.dyeKeys[target] || []).some((k) => masks[k]));
+  const hasMask = !!(scene && masks && target && (scene.dyeKeys[target] || []).some((k) => masks[k]));
 
   const onTab = useCallback((c) => { setTab(c); setQ(""); }, []);
   const onDress = useCallback((patch) => setDress((s) => ({ ...s, ...patch })), []);
@@ -144,6 +185,9 @@ export default function App() {
   const onDye = useCallback((cat, p) => setDye((s) => ({ ...s, [cat]: p })), []);
   const onScene = useCallback((info) => setScene(info), []);
   const onMasks = useCallback((m) => setMasks(m), []);
+
+  const gearWait = GEAR_TABS.includes(tab) && !gear;
+  const counts = Object.fromEntries(["costume", "set", "weapon", "mount", "wing", "pet"].map((c) => [c, GEAR_TABS.includes(c) && !gear ? "…" : lists ? lists[c].length : 0]));
 
   return (
     <div className="wrap">
@@ -161,18 +205,20 @@ export default function App() {
 
       {data && lists && (
         <>
-          <Toolbar t={t} tab={tab} onTab={onTab} q={q} onQ={setQ} counts={{ costume: lists.costume.length, mount: lists.mount.length, wing: lists.wing.length, pet: lists.pet.length }} />
+          <Toolbar t={t} tab={tab} onTab={onTab} q={q} onQ={setQ} counts={counts} />
           <div className="layout">
             <div className="leftcol">
               {tab === "dress"
-                ? <DressForm t={t} dress={dress} lists={lists} onChange={onDress} />
-                : <List t={t} tab={tab} rows={rows} cur={sel[tab]} onSelect={(k) => setSel((s) => ({ ...s, [tab]: k }))} />}
+                ? <DressForm t={t} dress={dress} lists={lists} gear={!!gear} onChange={onDress} />
+                : gearWait
+                  ? <p className="notice">{gear === false ? t("load.error", { e: "gear.json" }) : t("load.gear")}</p>
+                  : <List t={t} tab={tab} rows={rows} cur={sel[tab]} onSelect={(k) => setSel((s) => ({ ...s, [tab]: k }))} />}
             </div>
             <div className="viewcol">
               <Stage t={t} spec={spec} motion={motion} spin={spin} dye={dye} anims={scene && scene.anims} onMotion={setMotion} onSpin={setSpin} onScene={onScene} onMasks={onMasks} />
               {RIDER_TABS.includes(tab) && <RaceSex t={t} dress={dress} onDress={onDress} />}
-              <DyePanel t={t} targets={dyeTargets} target={target} onTarget={setDyeTarget} dye={dye} onChange={onDye} hasMask={hasMask} />
-              <Details t={t} tab={tab} catalog={loc.catalog} lists={lists} sel={sel} dress={dress} onTry={onTry} />
+              {dyeTargets.length > 0 && <DyePanel t={t} targets={dyeTargets} target={target} onTarget={setDyeTarget} dye={dye} onChange={onDye} hasMask={hasMask} />}
+              {!gearWait && <Details t={t} tab={tab} catalog={loc.catalog} lists={lists} gear={gearL} sel={sel} dress={dress} onTry={onTry} />}
             </div>
           </div>
         </>

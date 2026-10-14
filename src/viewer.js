@@ -100,7 +100,7 @@ export class Viewer {
     return this.fileCache.get(path);
   }
   decodeFile(j) {
-    const out = { tex: j.tex || {}, anims: {}, ride: j.ride, back: j.back, wing: j.wing, parts: [] };
+    const out = { tex: j.tex || {}, anims: {}, ride: j.ride, back: j.back, wing: j.wing, stance: j.stance, hands: j.hands, parts: [] };
     for (const [k, a] of Object.entries(j.anims || {})) { try { out.anims[k] = decodeAnim(a); } catch (e) { /* animação corrompida: ignora */ } }
     if (j.parts) out.parts = j.parts.map(decodeMesh);
     return out;
@@ -121,7 +121,8 @@ export class Viewer {
   }
 
   // ── cena ──
-  // spec: { kind: "single", cat, file } | { kind: "char", code, race, costume?, wing?, pet?, mount? } (caminhos relativos a base)
+  // spec: { kind: "single", cat, file } | { kind: "char", code, race, costume?, set?, weapon?, shield?, wing?, pet?, mount? }
+  // (caminhos relativos a base; weapon/shield = { f, kind })
   async build(spec) {
     const my = ++this.token;
     this.spec = spec;
@@ -143,8 +144,34 @@ export class Viewer {
           const hide = new Set(["upper", "hand", "lower", "foot"]);
           if (cd.parts.some((p) => p.part === "helmet")) hide.add("hair");
           meshes = meshes.filter((m) => !hide.has(m.mesh.part)).concat(cd.parts.map((mesh) => ({ mesh, map: this.texture(spec.costume, mesh.t, cd.tex[mesh.t]) })));
+        } else if (spec.set) {
+          // Armadura troca peça por peça (só as vagas que o set tem); elmo esconde o cabelo, como no jogo.
+          const sd = await this.getJSON(spec.set);
+          const hide = new Set(sd.parts.map((p) => p.part));
+          if (hide.has("helmet")) hide.add("hair");
+          meshes = meshes.filter((m) => !hide.has(m.mesh.part)).concat(sd.parts.map((mesh) => ({ mesh, map: this.texture(spec.set, mesh.t, sd.tex[mesh.t]), dyeable: false })));
         }
-        next.char = new Actor(meshes, base.anims); next.back = base.back;
+        let anims = base.anims;
+        if (spec.weapon || spec.shield) {
+          // Postura com arma (animações extras do personagem) + armas presas ao osso da mão: mundo = G[mão] · personagem.
+          const stFile = `c/${spec.code}-st.json`, st = await this.getJSON(stFile);
+          anims = { ...base.anims, ...st.anims };
+          const kind = spec.weapon ? spec.weapon.kind : "sh";
+          const [idleKey, runKey] = (st.stance && st.stance[kind]) || [];
+          next.stanceKeys = { idle: idleKey, run: runKey };
+          next.hands = st.hands || [0, 0];
+          const both = kind === "du" || kind === "kn", leftOnly = kind === "bow";
+          if (spec.weapon) {
+            const wd = await this.getJSON(spec.weapon.f);
+            if (!leftOnly) next.wr = this.actorFrom(spec.weapon.f, wd);
+            if (both || leftOnly) next.wl = this.actorFrom(spec.weapon.f, wd);
+          }
+          if (spec.shield && !next.wl) {   // a mão esquerda já ocupada (duas armas, garras, arco) não leva escudo
+            const sd = await this.getJSON(spec.shield.f);
+            next.wl = this.actorFrom(spec.shield.f, sd);
+          }
+        }
+        next.char = new Actor(meshes, anims); next.back = base.back;
         // matriz de encaixe emulada da função do jogo (WingPosition.xml): asa = M · osso · mundo
         next.wingFit = base.wing && base.wing.m ? { bone: base.wing.bone, L: new Float32Array(base.wing.m) } : null;
         for (const f of ["wing", "pet", "mount"]) {
@@ -188,6 +215,9 @@ export class Viewer {
         if (gc === 0) a.char.setAnim(m === "idle" ? "ride0" : "ride0run", "ride0");
         else if (gc === 2) a.char.setAnim("ride2", "ride0");
         else a.char.setAnim("ride1", "ride0");
+      } else if (a.stanceKeys) {   // com arma: parado e correndo na postura da arma; andando é o mesmo de sempre
+        const sk = a.stanceKeys;
+        a.char.setAnim(m === "idle" ? sk.idle : m === "run" ? sk.run : null, m);
       } else a.char.setAnim(m);
     }
     if (a.wing) a.wing.setAnim(m === "run" ? "run" : "idle", "walk");
@@ -206,6 +236,8 @@ export class Viewer {
       Wc = translation(p[0], p[1], p[2]);
     }
     a.char.update(sec, Wc);
+    if (a.wr) a.wr.update(sec, a.char.boneMatrix(a.hands[0]));
+    if (a.wl) a.wl.update(sec, a.char.boneMatrix(a.hands[1]));
     if (a.wing) {
       if (a.wingFit) a.wing.update(sec, mul(a.wingFit.L, a.char.boneMatrix(a.wingFit.bone), new Float32Array(16)));
       else { const p = a.char.bonePos(a.back); a.wing.update(sec, translation(p[0], p[1], p[2])); }

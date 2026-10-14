@@ -87,6 +87,9 @@ select { font: inherit; color: var(--fg); background: var(--surface); border: 1p
 .itemlist .ithead { display: flex; gap: 10px; align-items: baseline; font-weight: 500; }
 .itemlist code { font-family: var(--mono); font-size: 0.75rem; color: var(--muted); min-width: 4.5em; font-variant-numeric: tabular-nums; }
 .itemlist .itdesc { margin: 0; color: var(--muted); white-space: pre-line; overflow-wrap: anywhere; }
+.synlist { margin: 0; padding: 0; list-style: none; display: grid; gap: 4px; font-size: var(--s--1); }
+.synlist li { display: grid; grid-template-columns: 5.5em minmax(0, 1fr); gap: 10px; align-items: baseline; }
+.synlist b { font-family: var(--mono); font-size: 0.75rem; font-weight: 500; color: var(--accent); font-variant-numeric: tabular-nums; }
 .stat { font-size: 0.75rem; border: 1px solid var(--line); border-radius: 999px; padding: 1px 8px; color: var(--fg); font-variant-numeric: tabular-nums; }
 .stat.good { border-color: var(--accent); color: var(--accent); }
 .model { font-family: var(--mono); font-size: 0.75rem; color: var(--muted); overflow-wrap: anywhere; }

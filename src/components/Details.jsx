@@ -1,15 +1,15 @@
-import { statChips } from "../catalog.js";
+import { statChips, synText, CODE } from "../catalog.js";
 
 const nameOf = (list, k) => { const g = list.find((x) => x.k === k); return g ? g.name : null; };
 
-function Items({ items, t }) {
+function Items({ items, t, gear }) {
   return (
     <ul className="itemlist">
       {items.map((x, i) => (
         <li key={i}>
           <div className="ithead"><code>{x[0]}/{x[1]}</code><span>{x[2]}</span></div>
           <div className="chips">
-            {statChips(x[3], x[0], t).map((c, j) => <span key={j} className={c.good ? "stat good" : "stat"}>{c.text}</span>)}
+            {statChips(x[3], x[0], t, gear).map((c, j) => <span key={j} className={c.good ? "stat good" : "stat"}>{c.text}</span>)}
           </div>
           {x[4] && <p className="itdesc">{x[4]}</p>}
         </li>
@@ -18,19 +18,34 @@ function Items({ items, t }) {
   );
 }
 
-// catalog = lista localizada (mesmos índices k do catálogo bruto)
-export default function Details({ tab, catalog, lists, sel, dress, onTry, t }) {
+// Bônus do set por quantidade de peças vestidas (o "Synergy" do cliente)
+function Synergy({ syn, t }) {
+  return (
+    <ul className="synlist">
+      {syn.map(([n, b]) => (
+        <li key={n}><b>{t("syn.n", { n })}</b><span>{synText(b, t).join(" · ")}</span></li>
+      ))}
+    </ul>
+  );
+}
+
+// catalog = lista localizada (mesmos índices k do catálogo bruto); gear = sets/armas localizados
+export default function Details({ tab, catalog, lists, gear, sel, dress, onTry, t }) {
   const who = t("who", { race: t("race." + dress.race), sex: t("who." + dress.sex) });
 
   if (tab === "dress") {
-    const chips = ["costume", "wing", "pet", "mount"].map((c) => [c, nameOf(lists[c], dress[c])]).filter((c) => c[1]);
+    const cats = ["costume", "set", "weapon", "shield", "wing", "pet", "mount"];
+    const src = { weapon: lists.wpn, shield: lists.shield };
+    const chips = cats.map((c) => [c, nameOf(src[c] || lists[c], dress[c])]).filter((c) => c[1]);
+    const head = nameOf(lists.costume, dress.costume) || nameOf(lists.set, dress.set) || t("det.starter");
     return (
       <section className="details" aria-live="polite">
         <div className="label">{t("det.dress", { who })}</div>
-        <h2>{nameOf(lists.costume, dress.costume) || t("det.starter")}</h2>
+        <h2>{head}</h2>
         <div className="chips">
           {chips.length ? chips.map((c) => <span key={c[0]} className="chip"><b>{t("cat." + c[0])}</b>{c[1]}</span>) : <span className="chip">{t("det.nothing")}</span>}
         </div>
+        {dress.costume != null && dress.set != null && <p className="desc">{t("det.costume")}</p>}
       </section>
     );
   }
@@ -45,6 +60,41 @@ export default function Details({ tab, catalog, lists, sel, dress, onTry, t }) {
         <div className="label">{t("det.items")}</div>
         <Items items={c.items || [[c.t, c.i, c.name]]} t={t} />
         <div className="btnrow"><button type="button" className="btn primary" onClick={() => onTry("costume", c.k)}>{t("btn.try")}</button></div>
+      </section>
+    );
+  }
+
+  if (tab === "set") {
+    const g = gear && gear.set[sel.set];
+    if (!g) return null;
+    const code = CODE[dress.race][dress.sex];
+    return (
+      <section className="details" aria-live="polite">
+        <div className="label">{t("cat.set")} · {who}</div>
+        <h2>{g.name}</h2>
+        {!g.f && <p className="desc">{t("det.accessory")}</p>}
+        {g.f && !g.codes.includes(code) && <p className="desc">{t("det.norace", { who })}</p>}
+        {g.syn.length > 0 && <><div className="label">{t("det.syn")}</div><Synergy syn={g.syn} t={t} /></>}
+        <div className="label">{t("det.pieces")}</div>
+        <Items items={g.items} t={t} gear />
+        {g.f && <div className="btnrow"><button type="button" className="btn primary" onClick={() => onTry("set", g.k)}>{t("btn.try")}</button></div>}
+      </section>
+    );
+  }
+
+  if (tab === "weapon") {
+    const g = gear && gear.weapon[sel.weapon];
+    if (!g) return null;
+    const cat = g.kind === "sh" ? "shield" : "weapon";
+    return (
+      <section className="details" aria-live="polite">
+        <div className="label">{t("cat." + cat)} · {who}</div>
+        <h2>{g.name}</h2>
+        <p className="desc">{t("det.stance", { k: t("kind." + g.kind) })}</p>
+        <div className="label">{t("det.items")}</div>
+        <Items items={g.items} t={t} gear />
+        <div className="model">{t("det.model", { m: g.entry, a: t("kind." + g.kind) })}</div>
+        <div className="btnrow"><button type="button" className="btn primary" onClick={() => onTry(cat, g.k)}>{t("btn.try")}</button></div>
       </section>
     );
   }

@@ -23,6 +23,7 @@ export default function Stage({ spec, motion, spin, dye, anims, onMotion, onSpin
       return undefined;
     }
     viewerRef.current = v;
+    if (/[?&]debug\b/.test(location.search)) window.__viewer = v;   // testes automáticos inspecionam a cena
     return () => { v.dispose(); viewerRef.current = null; };
   }, []);
 

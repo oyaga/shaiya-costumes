@@ -1,6 +1,6 @@
 # Galeria Shaiya
 
-Catálogo 3D não oficial de **fantasias, montarias, asas e pets** de Shaiya, com animação, provador (monte o visual completo por raça e gênero) e pintura (a tintura do jogo, reproduzida do shader do cliente).
+Catálogo 3D não oficial de **fantasias, sets, armas, montarias, asas e pets** de Shaiya, com animação, provador (monte o visual completo por raça e gênero, com set, arma e escudo na mão) e pintura (a tintura do jogo, reproduzida do shader do cliente).
 
 Site: https://oyaga.github.io/shaiya-costumes/
 
@@ -22,6 +22,11 @@ bun run dev
 - `c/<code>.json` — personagem base por raça/gênero (humf, huwf, elmr, elwr, vimr, viwr, demf, dewf): corpo, animações e a matriz de encaixe da asa.
 - `k/NNN/<code>.json` — fantasia por variante de raça/gênero.
 - `mask/masks.json` — máscaras de pintura (`<textura>_M.dds` do jogo, canal vermelho).
+- `gear.json` — sets (peças, bônus por quantidade de peças vestidas) e armas/escudos agrupados por visual, com nomes e descrições em PT/ES/EN. O cliente só tem o nome do set em inglês.
+- `s/NNN/<code>.json` — peças de armadura de um set por raça/gênero (trocam só as vagas que o set tem; o elmo esconde o cabelo).
+- `w/NNNN.json` — arma ou escudo: malha estática presa ao osso da mão.
+- `c/<code>-st.json` — posturas com arma do personagem (uma mão, duas mãos, duas armas, lança, arco…), qual postura cada tipo de arma usa e os ossos das mãos.
+- Para atualizar sets e armas a partir de uma nova extração: `python scripts/prepare_gear.py <pasta site_gear>`.
 - `i18n/es.json`, `i18n/en.json` — nomes e descrições dos itens em espanhol e inglês, das tabelas de texto do próprio cliente (`DBItemText_SPN` / `DBItemText_USA`); `i18n/search.json` junta os nomes nos três idiomas para a busca.
 
 O site tem interface em português, espanhol e inglês (`src/i18n.js`); a busca acha um item pelo nome em qualquer um dos três.
