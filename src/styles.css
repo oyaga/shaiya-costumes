@@ -22,6 +22,8 @@ html, body { margin: 0; }
 body { background: var(--bg); color: var(--fg); font-family: var(--body); font-size: var(--s0); line-height: 1.5; -webkit-font-smoothing: antialiased; }
 .wrap { max-width: 1280px; margin: 0 auto; padding-inline: clamp(16px, 3vw, 32px); padding-block: calc(env(safe-area-inset-top, 0px) + 28px) calc(env(safe-area-inset-bottom, 0px) + 32px); display: grid; gap: 20px; }
 header { display: grid; gap: 6px; }
+.toprow { display: flex; flex-wrap: wrap; gap: 8px 16px; align-items: center; justify-content: space-between; }
+.seg.langs button { font-family: var(--mono); font-size: 0.75rem; padding: 4px 10px; letter-spacing: 0.04em; }
 .eyebrow { font-family: var(--mono); font-size: 0.75rem; color: var(--muted); letter-spacing: 0.03em; }
 h1 { font-family: var(--display); font-weight: 400; font-size: var(--s3); line-height: 1.05; margin: 0; letter-spacing: 0.01em; text-wrap: balance; }
 .lede { margin: 0; color: var(--muted); max-width: 66ch; }
@@ -34,7 +36,7 @@ h1 { font-family: var(--display); font-weight: 400; font-size: var(--s3); line-h
 .tab:hover { color: var(--fg); }
 .tab[aria-selected="true"] { background: var(--accent-soft); color: var(--accent); }
 .tab:focus-visible, .row:focus-visible, .search:focus-visible, .vbtn:focus-visible, .btn:focus-visible, select:focus-visible, .seg button:focus-visible, .sw:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
-.search { font: inherit; color: var(--fg); background: var(--surface); border: 1px solid var(--line); border-radius: 8px; padding: 8px 12px; width: min(100%, 300px); }
+.search { font: inherit; color: var(--fg); background: var(--surface); border: 1px solid var(--line); border-radius: 8px; padding: 8px 12px; width: min(100%, 340px); }
 .search::placeholder { color: var(--muted); }
 
 .layout { display: grid; grid-template-columns: minmax(0, 340px) minmax(0, 1fr); gap: 24px; align-items: start; }

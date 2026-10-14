@@ -46,7 +46,7 @@ class Actor {
 const disposeAll = (set) => Object.values(set).forEach((a) => a && a.dispose && a.dispose());
 
 export class Viewer {
-  // cb: { onStatus(msg|null), onScene({anims, dyeKeys}), onMasks(masks) }
+  // cb: { onStatus("loading" | "error" | null), onScene({anims, dyeKeys}), onMasks(masks) }
   constructor(canvas, stageEl, base, cb) {
     this.base = base; this.cb = cb; this.stageEl = stageEl;
     this.token = 0; this.dyeSeq = 0; this.actors = null; this.fit = null; this.spec = null;
@@ -125,7 +125,7 @@ export class Viewer {
   async build(spec) {
     const my = ++this.token;
     this.spec = spec;
-    this.cb.onStatus("Carregando modelo…");
+    this.cb.onStatus("loading");
     try {
       const next = {};
       if (spec && spec.kind === "single") {
@@ -164,7 +164,7 @@ export class Viewer {
       this.cb.onScene(this.sceneInfo());
       this.applyDyes();
     } catch (e) {
-      if (my === this.token) this.cb.onStatus("Não foi possível carregar este modelo. Tente de novo ou escolha outro item.");
+      if (my === this.token) this.cb.onStatus("error");
     }
   }
 

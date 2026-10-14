@@ -22,5 +22,8 @@ bun run dev
 - `c/<code>.json` — personagem base por raça/gênero (humf, huwf, elmr, elwr, vimr, viwr, demf, dewf): corpo, animações e a matriz de encaixe da asa.
 - `k/NNN/<code>.json` — fantasia por variante de raça/gênero.
 - `mask/masks.json` — máscaras de pintura (`<textura>_M.dds` do jogo, canal vermelho).
+- `i18n/es.json`, `i18n/en.json` — nomes e descrições dos itens em espanhol e inglês, das tabelas de texto do próprio cliente (`DBItemText_SPN` / `DBItemText_USA`); `i18n/search.json` junta os nomes nos três idiomas para a busca.
+
+O site tem interface em português, espanhol e inglês (`src/i18n.js`); a busca acha um item pelo nome em qualquer um dos três.
 
 Shaiya e seus modelos pertencem aos respectivos donos. Este catálogo não tem ligação com o jogo nem com a publisher.
