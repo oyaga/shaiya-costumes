@@ -37,6 +37,21 @@ export default function Stage({ spec, motion, spin, dye, anims, onMotion, onSpin
   }, [dye]);
 
   const view = (v) => { viewerRef.current?.setView(v); onSpin(false); };
+  // Baixa a cena em Full HD (PNG), do jeito que está na tela
+  const shot = () => {
+    const v = viewerRef.current;
+    if (!v || status) return;
+    const cv = v.snapshot(1920, 1080, "Galeria Shaiya · oyaga.github.io/shaiya-costumes");
+    cv.toBlob((b) => {
+      if (!b) return;
+      const a = document.createElement("a");
+      const d = new Date(), p = (n) => String(n).padStart(2, "0");
+      a.download = `galeria-shaiya-${d.getFullYear()}${p(d.getMonth() + 1)}${p(d.getDate())}-${p(d.getHours())}${p(d.getMinutes())}${p(d.getSeconds())}.png`;
+      a.href = URL.createObjectURL(b);
+      document.body.appendChild(a); a.click(); a.remove();
+      setTimeout(() => URL.revokeObjectURL(a.href), 5000);
+    }, "image/png");
+  };
 
   return (
     <div className="stage" ref={stageRef}>
@@ -51,6 +66,7 @@ export default function Stage({ spec, motion, spin, dye, anims, onMotion, onSpin
         <span className="vbtns" role="group" aria-label={t("camera")}>
           {["front", "side", "back"].map((c) => <button key={c} type="button" className="vbtn" onClick={() => view(c)}>{t("cam." + c)}</button>)}
           <button type="button" className="vbtn" aria-pressed={spin} onClick={() => onSpin(!spin)}>{t("cam.spin")}</button>
+          <button type="button" className="vbtn" disabled={!!status} title={t("cam.shot_hint")} onClick={shot}>{t("cam.shot")}</button>
         </span>
       </div>
     </div>

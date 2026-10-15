@@ -285,6 +285,37 @@ export class Viewer {
   }
   setSpin(on) { this.controls.autoRotate = !!on; }
 
+  // Foto da cena em w×h (Full HD por padrão), com o ângulo e o zoom que a pessoa deixou. O canvas do palco é
+  // transparente (o fundo é CSS), então o fundo do palco é pintado atrás. Tudo no mesmo tick: troca o tamanho
+  // do buffer, desenha, copia e devolve — o laço de animação não chega a ver o tamanho grande.
+  snapshot(w = 1920, h = 1080, mark = "") {
+    const r = this.renderer, cam = this.camera;
+    const pr = r.getPixelRatio(), size = r.getSize(new THREE.Vector2()), aspect = cam.aspect;
+    const out = document.createElement("canvas"); out.width = w; out.height = h;
+    const cx = out.getContext("2d");
+    const css = getComputedStyle(this.stageEl);
+    const top = css.getPropertyValue("--stage-top").trim() || "#23302d", bottom = css.getPropertyValue("--stage-bottom").trim() || "#0d1312";
+    const lin = cx.createLinearGradient(0, 0, 0, h); lin.addColorStop(0, top); lin.addColorStop(1, bottom);
+    cx.fillStyle = lin; cx.fillRect(0, 0, w, h);
+    const glow = cx.createRadialGradient(w / 2, h, 0, w / 2, h, h * 0.9);   // o brilho quente do chão, como no palco
+    glow.addColorStop(0, "rgba(220,154,82,0.16)"); glow.addColorStop(1, "rgba(220,154,82,0)");
+    cx.fillStyle = glow; cx.fillRect(0, 0, w, h);
+    try {
+      r.setPixelRatio(1); r.setSize(w, h, false);
+      cam.aspect = w / h; cam.updateProjectionMatrix();
+      r.render(this.scene, cam);
+      cx.drawImage(r.domElement, 0, 0, w, h);
+    } finally {
+      r.setPixelRatio(pr); r.setSize(size.x, size.y, false);
+      cam.aspect = aspect; cam.updateProjectionMatrix();
+    }
+    if (mark) {   // assinatura discreta no canto
+      cx.font = `500 ${Math.round(h / 54)}px system-ui, sans-serif`; cx.textAlign = "right"; cx.textBaseline = "bottom";
+      cx.fillStyle = "rgba(223,230,225,0.45)"; cx.fillText(mark, w - h / 40, h - h / 45);
+    }
+    return out;
+  }
+
   // ── pintura (tintura Crowly) ──
   // Replica o pixel shader do cliente (gDyeingHSVA/gDyeingMode): gira o matiz por uma matriz de rotação de cor,
   // escala a saturação em torno do cinza 0,299·(r+g+b) e multiplica pelo brilho. Onde existe a máscara
