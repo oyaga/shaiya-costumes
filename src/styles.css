@@ -77,6 +77,15 @@ select { font: inherit; color: var(--fg); background: var(--surface); border: 1p
 .btnrow { display: flex; flex-wrap: wrap; gap: 8px; }
 
 .viewcol { display: grid; gap: 14px; min-width: 0; position: sticky; top: calc(env(safe-area-inset-top, 0px) + 12px); }
+.stages { display: grid; gap: 10px; min-width: 0; }
+.stages.two { grid-template-columns: 1fr 1fr; }
+.stages.two .stage { height: min(54vh, 520px); min-height: 300px; }
+.stage.active { outline: 2px solid var(--stage-accent); outline-offset: -2px; }
+.sidetag { position: absolute; top: 10px; left: 12px; z-index: 2; cursor: pointer;
+  font-family: var(--mono); font-size: 0.75rem; font-weight: 500; letter-spacing: 0.08em;
+  padding: 3px 10px; border-radius: 999px; background: rgba(13,19,18,0.65); color: var(--stage-fg);
+  border: 1px solid rgba(223,230,225,0.25); }
+.sidetag[aria-pressed="true"] { background: var(--stage-accent); color: var(--stage-bottom); border-color: var(--stage-accent); }
 .stage { position: relative; height: min(64vh, 620px); min-height: 340px; border-radius: 12px; overflow: hidden;
   background: radial-gradient(70% 50% at 50% 100%, rgba(220,154,82,0.16), transparent 70%), linear-gradient(var(--stage-top), var(--stage-bottom)); }
 .stage canvas { display: block; width: 100%; height: 100%; touch-action: none; }
@@ -130,5 +139,24 @@ select { font: inherit; color: var(--fg); background: var(--surface); border: 1p
   .viewcol { position: static; order: -1; }
   .list { max-height: 60vh; }
   .stage { height: 54vh; }
+  .stages.two { grid-template-columns: 1fr; }
+  .stages.two .stage { height: 44vh; min-height: 260px; }
 }
+.sideseg { margin-left: 4px; }
+.cmphint { margin: 0; color: var(--muted); font-size: var(--s--1); }
+/* Barra com o Comparar ligado: o grupo desce inteiro de linha; os botões e o A/B não encolhem (só a busca) */
+.filters { flex: 1 1 auto; justify-content: flex-end; }
+.filters > .btn, .filters > .seg { flex: 0 0 auto; white-space: nowrap; }
+.filters > .seg { flex-wrap: nowrap; }
+.filters > .search { flex: 1 1 200px; min-width: 160px; }
+
+/* Conteúdo das páginas geradas (scripts/prerender.mjs): aparece até o app montar e é o que os buscadores
+   leem sem rodar JavaScript. O React troca tudo isto pelo app quando carrega. */
+.seo .crumbs { font-family: var(--mono); font-size: 0.75rem; color: var(--muted); }
+.seo a { color: var(--accent); }
+.seo h2 { font-family: var(--display); font-weight: 400; font-size: var(--s2); margin: 0; }
+.seo section { display: grid; gap: 8px; }
+.seo ul { margin: 0; padding-left: 1.2em; }
+.seo .cols { columns: 16rem; column-gap: 24px; }
+.seo .desc { margin: 0; max-width: 72ch; white-space: pre-line; }
 @media (prefers-reduced-motion: reduce) { * { transition: none !important; } }

@@ -13,6 +13,8 @@ Cada raça joga três classes, e a classe escolhe o corpo do personagem — por 
 
 `?cls=mage&sex=f` no endereço abre o site já nessa classe e gênero.
 
+**Comparar** mostra duas vitrines lado a lado (A e B): a lista, o provador, a pintura e a raça/classe mexem no lado ativo, e "Trocar A ↔ B" inverte os dois.
+
 Site: https://oyaga.github.io/shaiya-costumes/
 
 ## Rodar localmente
@@ -23,6 +25,18 @@ bun run dev
 ```
 
 `bun run build` gera a versão estática em `dist/`. O deploy no GitHub Pages é automático a cada push na `main` (`.github/workflows/deploy.yml`). O build usa caminhos relativos (`base: "./"`), então a mesma `dist/` funciona na raiz de qualquer host estático (Vercel, Netlify…).
+
+## Página por item
+
+Depois do `vite build`, `scripts/prerender.mjs` gera uma página HTML para cada item, cada categoria e a inicial, nos três idiomas (o português fica na raiz):
+
+```
+fantasia/sp-dracula-150-67/      es/disfraz/sp-dracula-150-67/      en/costume/sp-draculea-150-67/
+```
+
+O número no fim é o id do item no jogo (tipo-id; set = id do set), então o endereço não muda quando os dados são regerados. Cada página tem título, descrição, link canônico, as versões nos outros idiomas (`hreflang`), imagem de compartilhamento (`public/og.jpg`) e um conteúdo estático com nome, atributos e links, que é o que os buscadores leem; o app abre por cima e mantém o endereço em dia enquanto você navega. Também saem `sitemap.xml`, `robots.txt` e `404.html`. Rotas em `src/routes.js` (as mesmas no app e no gerador).
+
+Os links absolutos usam `SITE_URL` (padrão: `https://oyaga.github.io/shaiya-costumes/`). Para publicar em outro endereço: `SITE_URL=https://meu-dominio/ bun run build`.
 
 ## Dados
 

@@ -1,4 +1,5 @@
 import { TABS, RACES, raceClasses } from "../catalog.js";
+import Seg from "./Seg.jsx";
 
 const GEAR_TABS = ["set", "weapon"];
 
@@ -13,7 +14,7 @@ function ClassFilter({ cls, onCls, t }) {
   );
 }
 
-export default function Toolbar({ tab, onTab, counts, q, onQ, cls, onCls, t }) {
+export default function Toolbar({ tab, onTab, counts, q, onQ, cls, onCls, cmp, onCmp, side, onSide, onSwap, t }) {
   return (
     <div className="toolbar">
       <div className="tabs" role="tablist" aria-label={t("tabs")}>
@@ -24,12 +25,13 @@ export default function Toolbar({ tab, onTab, counts, q, onQ, cls, onCls, t }) {
           </button>
         ))}
       </div>
-      {tab !== "dress" && (
-        <div className="filters">
-          {GEAR_TABS.includes(tab) && <ClassFilter cls={cls} onCls={onCls} t={t} />}
-          <input className="search" type="search" placeholder={t("search")} aria-label={t("search")} value={q} onChange={(e) => onQ(e.target.value)} />
-        </div>
-      )}
+      <div className="filters">
+        {tab !== "dress" && GEAR_TABS.includes(tab) && <ClassFilter cls={cls} onCls={onCls} t={t} />}
+        {tab !== "dress" && <input className="search" type="search" placeholder={t("search")} aria-label={t("search")} value={q} onChange={(e) => onQ(e.target.value)} />}
+        <button type="button" className="btn" aria-pressed={cmp} onClick={() => onCmp(!cmp)}>{t("cmp.on")}</button>
+        {cmp && <Seg className="sideseg" label={t("cmp.aria")} options={[["A", t("cmp.tag_a")], ["B", t("cmp.tag_b")]]} value={side} onChange={onSide} />}
+        {cmp && <button type="button" className="btn" onClick={onSwap}>{t("cmp.swap")}</button>}
+      </div>
     </div>
   );
 }

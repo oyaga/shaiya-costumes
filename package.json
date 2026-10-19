@@ -6,7 +6,7 @@
   "description": "Galeria Shaiya — catálogo 3D não oficial de fantasias, montarias, asas e pets, com provador e pintura.",
   "scripts": {
     "dev": "vite",
-    "build": "vite build",
+    "build": "vite build && node scripts/prerender.mjs",
     "preview": "vite preview"
   },
   "dependencies": {

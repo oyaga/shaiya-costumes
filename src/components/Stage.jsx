@@ -4,7 +4,7 @@ import { DATA_BASE } from "../config.js";
 
 const MOTIONS = ["idle", "walk", "run"];
 
-export default function Stage({ spec, motion, spin, dye, anims, onMotion, onSpin, onScene, onMasks, t }) {
+export default function Stage({ spec, motion, spin, dye, anims, onMotion, onSpin, onScene, onMasks, side, active, onActivate, t }) {
   const canvasRef = useRef(null), stageRef = useRef(null), viewerRef = useRef(null);
   const [status, setStatus] = useState("start");   // chave de texto (st.*) ou null
   const cbRef = useRef(null);
@@ -53,9 +53,15 @@ export default function Stage({ spec, motion, spin, dye, anims, onMotion, onSpin
     }, "image/png");
   };
 
+  const cls = "stage" + (side ? " withSide" : "") + (active ? " active" : "");
   return (
-    <div className="stage" ref={stageRef}>
+    <div className={cls} ref={stageRef} onPointerDown={onActivate}>
       <canvas ref={canvasRef} aria-label={t("view3d")} />
+      {side && (
+        <button type="button" className="sidetag" aria-pressed={!!active} onClick={(e) => { e.stopPropagation(); onActivate && onActivate(); }}>
+          {t("cmp.tag_" + side.toLowerCase())}
+        </button>
+      )}
       {status && <div className="msg">{t("st." + status)}</div>}
       <div className="bar">
         <span className="vbtns" role="group" aria-label={t("motion")}>
