@@ -4,6 +4,9 @@
 // Usado pelo app (abre o item do endereço e mantém o endereço em dia) e por scripts/prerender.mjs (gera as páginas).
 import { norm } from "./catalog.js";
 
+// Endereço principal do site (Vercel). A cópia do GitHub Pages aponta para cá nos links canônicos.
+export const MAIN_SITE = "https://shaiya-costumes.vercel.app/";
+
 export const ROUTE_LANGS = ["pt", "es", "en"];
 export const ROUTE_CATS = ["costume", "set", "weapon", "mount", "wing", "pet"];
 export const CAT_SEG = {

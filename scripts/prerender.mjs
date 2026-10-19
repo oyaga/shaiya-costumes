@@ -4,17 +4,20 @@
 // Cada página é o dist/index.html do build com título, descrição, links canônicos/alternativos e um conteúdo
 // estático dentro de #root (nome, atributos, versões, links) — é o que o buscador lê sem rodar JavaScript; o
 // app troca esse conteúdo ao montar e abre o item pelo endereço. Usa os mesmos textos, rotas e atributos do app.
-// SITE_URL (env) = endereço público, com "/" no fim. Padrão: GitHub Pages.
+// Endereço dos links absolutos (canônico, sitemap, imagem): SITE_URL (env) > domínio de produção que a Vercel
+// informa no build (VERCEL_PROJECT_PRODUCTION_URL — acompanha um domínio próprio, se um dia tiver) > MAIN_SITE.
+// O build do GitHub Pages também aponta para a Vercel: lá é só uma cópia.
 import fs from "node:fs";
 import path from "node:path";
 import { fileURLToPath } from "node:url";
 import { makeT, HTML_LANG } from "../src/i18n.js";
 import { statChips, LANG_IX } from "../src/catalog.js";
-import { ROUTE_LANGS, ROUTE_CATS, itemId, itemPath, catPath, homePath } from "../src/routes.js";
+import { MAIN_SITE, ROUTE_LANGS, ROUTE_CATS, itemId, itemPath, catPath, homePath } from "../src/routes.js";
 
 const repo = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "..");
 const dist = path.join(repo, "dist");
-const SITE = (process.env.SITE_URL || "https://oyaga.github.io/shaiya-costumes/").replace(/\/?$/, "/");
+const vercelProd = process.env.VERCEL_PROJECT_PRODUCTION_URL;
+const SITE = (process.env.SITE_URL || (vercelProd ? `https://${vercelProd}/` : MAIN_SITE)).replace(/\/?$/, "/");
 const LANG_NAME = { pt: "Português", es: "Español", en: "English" };
 const OG_LOCALE = { pt: "pt_BR", es: "es_ES", en: "en_US" };
 const HREFLANG = { pt: "pt-BR", es: "es", en: "en" };
@@ -192,8 +195,10 @@ for (const [rel, html] of pages) {
   fs.writeFileSync(path.join(dir, "index.html"), html);
 }
 
-// 404: qualquer endereço desconhecido abre o app na inicial (base ABSOLUTA, serve em qualquer profundidade)
-const notFound = TPL.replace(/<head>/, `<head>\n    <base href="${new URL(SITE).pathname}" />\n    <meta name="robots" content="noindex" />`);
+// 404: qualquer endereço desconhecido abre o app na inicial (base ABSOLUTA, serve em qualquer profundidade).
+// A base é a raiz DESTE build (/shaiya-costumes/ no Pages, / na Vercel), não a do endereço principal.
+const rootPath = process.env.GITHUB_ACTIONS ? `/${(process.env.GITHUB_REPOSITORY || "/shaiya-costumes").split("/")[1]}/` : "/";
+const notFound = TPL.replace(/<head>/, `<head>\n    <base href="${rootPath}" />\n    <meta name="robots" content="noindex" />`);
 fs.writeFileSync(path.join(dist, "404.html"), notFound);
 
 const today = new Date().toISOString().slice(0, 10);

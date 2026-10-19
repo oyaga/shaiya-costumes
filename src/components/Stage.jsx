@@ -1,6 +1,9 @@
 import { useEffect, useRef, useState } from "react";
 import { Viewer } from "../viewer.js";
 import { DATA_BASE } from "../config.js";
+import { MAIN_SITE } from "../routes.js";
+
+const MARK = "Galeria Shaiya · " + new URL(MAIN_SITE).host;   // assinatura do "Baixar imagem"
 
 const MOTIONS = ["idle", "walk", "run"];
 
@@ -41,7 +44,7 @@ export default function Stage({ spec, motion, spin, dye, anims, onMotion, onSpin
   const shot = () => {
     const v = viewerRef.current;
     if (!v || status) return;
-    const cv = v.snapshot(1920, 1080, "Galeria Shaiya · oyaga.github.io/shaiya-costumes");
+    const cv = v.snapshot(1920, 1080, MARK);
     cv.toBlob((b) => {
       if (!b) return;
       const a = document.createElement("a");

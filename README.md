@@ -15,7 +15,7 @@ Cada raça joga três classes, e a classe escolhe o corpo do personagem — por 
 
 **Comparar** mostra duas vitrines lado a lado (A e B): a lista, o provador, a pintura e a raça/classe mexem no lado ativo, e "Trocar A ↔ B" inverte os dois.
 
-Site: https://oyaga.github.io/shaiya-costumes/
+Site: https://shaiya-costumes.vercel.app/ (cópia no GitHub Pages: https://oyaga.github.io/shaiya-costumes/, com os links canônicos apontando para a Vercel)
 
 ## Rodar localmente
 
@@ -36,7 +36,11 @@ fantasia/sp-dracula-150-67/      es/disfraz/sp-dracula-150-67/      en/costume/s
 
 O número no fim é o id do item no jogo (tipo-id; set = id do set), então o endereço não muda quando os dados são regerados. Cada página tem título, descrição, link canônico, as versões nos outros idiomas (`hreflang`), imagem de compartilhamento (`public/og.jpg`) e um conteúdo estático com nome, atributos e links, que é o que os buscadores leem; o app abre por cima e mantém o endereço em dia enquanto você navega. Também saem `sitemap.xml`, `robots.txt` e `404.html`. Rotas em `src/routes.js` (as mesmas no app e no gerador).
 
-Os links absolutos usam `SITE_URL` (padrão: `https://oyaga.github.io/shaiya-costumes/`). Para publicar em outro endereço: `SITE_URL=https://meu-dominio/ bun run build`.
+Os links absolutos (canônico, sitemap, imagem) usam, nesta ordem: `SITE_URL`, o domínio de produção que a Vercel informa no build (`VERCEL_PROJECT_PRODUCTION_URL` — acompanha um domínio próprio, se o projeto ganhar um) ou `MAIN_SITE` em `src/routes.js` (`https://shaiya-costumes.vercel.app/`). O build do GitHub Pages também aponta para a Vercel.
+
+## Analytics
+
+Vercel Web Analytics, ligado só no build da Vercel (`VERCEL=1` → `VITE_VERCEL` em `vite.config.js`); a cópia do GitHub Pages fica sem. Conta uma visita por página aberta (o endereço em que a pessoa chegou), não cada item clicado — o plano grátis tem 50 mil eventos por mês. Precisa estar ativado no painel da Vercel (Analytics → Enable).
 
 ## Dados
 
