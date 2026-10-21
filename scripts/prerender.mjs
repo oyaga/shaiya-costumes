@@ -11,7 +11,7 @@ import fs from "node:fs";
 import path from "node:path";
 import { fileURLToPath } from "node:url";
 import { makeT, HTML_LANG } from "../src/i18n.js";
-import { statChips, LANG_IX } from "../src/catalog.js";
+import { statChips, mobSummary, mobVariant, LANG_IX } from "../src/catalog.js";
 import { MAIN_SITE, ROUTE_LANGS, ROUTE_CATS, itemId, itemPath, catPath, homePath } from "../src/routes.js";
 
 const repo = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "..");
@@ -27,6 +27,7 @@ const readJSON = (f) => JSON.parse(fs.readFileSync(path.join(dist, "data", f), "
 const catalog = readJSON("catalog.json");
 const gear = readJSON("gear.json");
 const TR = { pt: null, es: readJSON("i18n/es.json"), en: readJSON("i18n/en.json") };
+const MOBS = fs.existsSync(path.join(dist, "data", "monsters.json")) ? readJSON("monsters.json").mobs : [];
 const TPL = fs.readFileSync(path.join(dist, "index.html"), "utf8");
 const HAS_OG = fs.existsSync(path.join(dist, "og.jpg"));   // imagem de compartilhamento (public/og.jpg, 1200x630)
 
@@ -62,6 +63,7 @@ function buildLists(lang) {
     mount: other.filter((g) => g.cat === "mount"),
     wing: other.filter((g) => g.cat === "wing"),
     pet: other.filter((g) => g.cat === "pet"),
+    monster: MOBS.map((g) => ({ cat: "monster", raw: g, name: g.name[li] || g.name[0], desc: "", items: [] })),
   };
   for (const c of ROUTE_CATS) {
     out[c].sort((x, y) => sortKey(x).localeCompare(sortKey(y), lang, { sensitivity: "base" }));
@@ -159,25 +161,28 @@ for (const lang of ROUTE_LANGS) {
     // item
     list.forEach((g, i) => {
       const crumbs = [home, catCrumb, { name: g.name, rel: g.rel }];
-      const gearCat = c === "set" || c === "weapon";
-      const versions = g.items.map((x) => {
-        const chips = statChips(x[3], x[0], t, gearCat).map((s) => s.text).join(" · ");
-        return `<li>${esc(x[2])}${chips ? ` — ${esc(chips)}` : ""}</li>`;
-      }).join("");
+      const gearCat = c === "set" || c === "weapon", isMob = c === "monster";
+      const versions = isMob
+        ? g.raw.v.map((v) => `<li>${esc(mobVariant(v, t, lang))}</li>`).join("")
+        : g.items.map((x) => {
+          const chips = statChips(x[3], x[0], t, gearCat).map((s) => s.text).join(" · ");
+          return `<li>${esc(x[2])}${chips ? ` — ${esc(chips)}` : ""}</li>`;
+        }).join("");
+      const gdesc = isMob ? `${mobSummary(g.raw, t)}. ${g.raw.el ? t("mob.el", { e: t("el." + g.raw.el) }) : t("mob.noel")}.` : g.desc;
       const near = [];
       for (let d = 1; near.length < Math.min(NEIGHBORS, list.length - 1); d++) {
         near.push(list[(i + d) % list.length]);
         if (near.length < Math.min(NEIGHBORS, list.length - 1)) near.push(list[(i - d + list.length) % list.length]);
       }
-      const intro = t("seo.item_desc", { name: g.name, cat: t("cat." + c) });
-      const desc = clip(oneLine(`${intro} ${oneLine(g.desc)}`), 158);
+      const intro = t(isMob ? "seo.item_desc_mob" : "seo.item_desc", { name: g.name, cat: t("cat." + c) });
+      const desc = clip(oneLine(`${intro} ${oneLine(gdesc)}`), 158);
       const alts = ALT[c][g.id];
       render({
         lang, rel: g.rel, title: t("seo.item_title", { name: g.name, cat: t("cat." + c) }), desc, alts, crumbs,
         body: `<div class="wrap seo"><header>${crumbHtml(crumbs)}<h1>${esc(g.name)}</h1>`
           + `<p class="lede">${esc(intro)}</p></header>`
-          + (g.desc ? `<p class="desc">${esc(g.desc)}</p>` : "")
-          + `<section><h2>${esc(t("seo.versions"))}</h2><ul>${versions}</ul></section>`
+          + (gdesc ? `<p class="desc">${esc(gdesc)}</p>` : "")
+          + `<section><h2>${esc(t(isMob ? "mob.variants" : "seo.versions"))}</h2><ul>${versions}</ul></section>`
           + `<section><h2>${esc(t("seo.more", { tab: t("tab." + c) }))}</h2><ul class="cols">`
           + near.map((n) => `<li><a href="${esc(n.rel)}">${esc(n.name)}</a></li>`).join("")
           + `</ul><p><a href="${esc(catCrumb.rel)}">${esc(t("seo.all"))}</a></p></section>`

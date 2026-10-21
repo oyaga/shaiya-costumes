@@ -1,5 +1,5 @@
 // Constantes e helpers do catálogo (sem React, sem three). Rótulos vêm de i18n.js (t).
-export const TABS = ["dress", "costume", "set", "weapon", "mount", "wing", "pet"];
+export const TABS = ["dress", "costume", "set", "weapon", "mount", "wing", "pet", "monster"];
 export const RACES = ["hu", "el", "vi", "de"];
 export const SEXES = ["m", "f"];
 // Modelo do personagem por raça → corpo → gênero. Cada raça tem 2 corpos e a CLASSE escolhe qual: corpo 0 =
@@ -61,6 +61,17 @@ export function statChips(st, type, t, gear) {
     out.push({ text: st.dur >= 86400 ? (d > 1 ? t("stat.days", { v: d }) : t("stat.day")) : t("stat.hours", { v: Math.round(st.dur / 3600) }) });
   } else out.push({ text: t("stat.perm") });
   return out;
+}
+
+// Monstro (public/data/monsters.json): v = versões [id, nível, HP, EXP]; el = elemento (DBMonsterData.attrib:
+// 0 nenhum, 1 fogo, 2 água, 3 terra, 4 vento). Resumo da lista e linha de cada versão (lang = formato dos números).
+export function mobSummary(g, t) {
+  const lv = g.v.map((v) => v[1]), a = Math.min(...lv), b = Math.max(...lv);
+  return [a === b ? t("mob.lv", { v: a }) : t("mob.lvs", { a, b }), g.el ? t("el." + g.el) : null].filter(Boolean).join(" · ");
+}
+export function mobVariant(v, t, lang) {
+  const n = (x) => x.toLocaleString(lang);
+  return [t("mob.lv", { v: v[1] }), t("mob.hp", { v: n(v[2]) }), v[3] ? t("mob.exp", { v: n(v[3]) }) : null].filter(Boolean).join(" · ");
 }
 
 // Bônus de set ("Synergy" do cliente) por quantidade de peças: {str: 70, hp: 500, patk: 5…} → textos.

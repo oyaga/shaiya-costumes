@@ -25,7 +25,9 @@ class Actor {
   }
   setAnim(...keys) {
     for (const k of keys) if (k && this.anims[k]) { this.anim = this.anims[k]; return; }
-    this.anim = this.anims.idle || Object.values(this.anims)[0] || null;
+    // sem a pedida: parado, ou outra que não seja a de morte (objeto que só tem "morrendo" fica parado na pose)
+    const other = Object.entries(this.anims).find(([k]) => k !== "die");
+    this.anim = this.anims.idle || (other ? other[1] : null);
   }
   update(sec, W) {
     this.W = W;
@@ -210,7 +212,7 @@ export class Viewer {
     const has = (k) => !!(main && main.anims && (main.anims[k] || (a.char && a.mount)));
     const dyeKeys = {};
     for (const [cat, actor] of this.dyeActors()) dyeKeys[cat] = actor.parts.filter((p) => p.dyeable && p.base.userData).map((p) => p.base.userData.key);
-    return { anims: { idle: has("idle"), walk: has("walk"), run: has("run") }, dyeKeys };
+    return { anims: { idle: has("idle"), walk: has("walk"), run: has("run"), attack: has("attack"), die: has("die") }, dyeKeys };
   }
 
   setMotion(m) { this.motion = m; this.applyMotion(); }

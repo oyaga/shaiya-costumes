@@ -1,6 +1,6 @@
 # Galeria Shaiya
 
-Catálogo 3D não oficial de **fantasias, sets, armas, montarias, asas e pets** de Shaiya, com animação, provador (monte o visual completo por raça, classe e gênero, com set, arma e escudo na mão) e pintura (a tintura do jogo, reproduzida do shader do cliente).
+Catálogo 3D não oficial de **fantasias, sets, armas, montarias, asas, pets e monstros** de Shaiya, com animação, provador (monte o visual completo por raça, classe e gênero, com set, arma e escudo na mão) e pintura (a tintura do jogo, reproduzida do shader do cliente).
 
 Cada raça joga três classes, e a classe escolhe o corpo do personagem — por isso o mesmo set veste diferente no Ranger e no Mago, que são Elfos:
 
@@ -57,6 +57,8 @@ Vercel Web Analytics, ligado só no build da Vercel (`VERCEL=1` → `VITE_VERCEL
 - `c/<code>-st.json` — posturas com arma do personagem (uma mão, duas mãos, duas armas, lança, arco…), qual postura cada tipo de arma usa e os ossos das mãos.
 - Para atualizar sets e armas a partir de uma nova extração: `python scripts/prepare_gear.py <pasta site_gear>`.
 - Personagens e fantasias do corpo 1 extraídos à parte: `python scripts/merge_body1.py <pasta>` (casa as fantasias pelo item e acrescenta os personagens no `catalog.json`).
+- `monsters.json` — monstros (aba Monstros): nome em PT/ES/EN (`DBMonsterText_BRZ|SPN|USA` do cliente), elemento e as versões `[id, nível, HP, EXP]` de cada um (`DBMonsterData`). Só os de verdade: sem nomes "???"/de teste, nível 1–999 e HP > 0 (pets, asas e invocações ficam de fora). Um registro por nome + modelo + cor.
+- `mob/NNN.json` — modelo do monstro (NNN = índice no `Monster.MON` do cliente; vários monstros usam o mesmo), no formato do `m/`, com as animações parado/andando/correndo/atacando/morrendo. Para atualizar: `python scripts/prepare_monsters.py <pasta site_mob>`.
 - `i18n/es.json`, `i18n/en.json` — nomes e descrições dos itens em espanhol e inglês, das tabelas de texto do próprio cliente (`DBItemText_SPN` / `DBItemText_USA`); `i18n/search.json` junta os nomes nos três idiomas para a busca.
 
 O site tem interface em português, espanhol e inglês (`src/i18n.js`); a busca acha um item pelo nome em qualquer um dos três.

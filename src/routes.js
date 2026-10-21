@@ -8,12 +8,13 @@ import { norm } from "./catalog.js";
 export const MAIN_SITE = "https://shaiya-costumes.vercel.app/";
 
 export const ROUTE_LANGS = ["pt", "es", "en"];
-export const ROUTE_CATS = ["costume", "set", "weapon", "mount", "wing", "pet"];
+export const ROUTE_CATS = ["costume", "set", "weapon", "mount", "wing", "pet", "monster"];
 export const CAT_SEG = {
-  pt: { costume: "fantasia", set: "set", weapon: "arma", mount: "montaria", wing: "asa", pet: "pet" },
-  es: { costume: "disfraz", set: "conjunto", weapon: "arma", mount: "montura", wing: "alas", pet: "mascota" },
-  en: { costume: "costume", set: "set", weapon: "weapon", mount: "mount", wing: "wings", pet: "pet" },
+  pt: { costume: "fantasia", set: "set", weapon: "arma", mount: "montaria", wing: "asa", pet: "pet", monster: "monstro" },
+  es: { costume: "disfraz", set: "conjunto", weapon: "arma", mount: "montura", wing: "alas", pet: "mascota", monster: "monstruo" },
+  en: { costume: "costume", set: "set", weapon: "weapon", mount: "mount", wing: "wings", pet: "pet", monster: "monster" },
 };
+const ONE_ID = ["set", "monster"];   // id de um número só (set = id do set; monstro = id no DBMonsterData)
 
 export const langPrefix = (lang) => (lang === "pt" ? "" : lang + "/");
 
@@ -25,7 +26,7 @@ export function slugify(s) {
 /** Id estável do item no jogo. Serve para as linhas das listas (que guardam os campos originais). */
 export function itemId(cat, g) {
   if (!g) return "";
-  if (cat === "set") return String(g.id);
+  if (ONE_ID.includes(cat)) return String(g.id);
   if (cat === "costume") return `${g.t}-${g.i}`;
   const x = g.items && g.items[0];
   return x ? `${x[0]}-${x[1]}` : "";
@@ -46,6 +47,6 @@ export function parseRoute(rel) {
   if (parts[0] === "es" || parts[0] === "en") lang = parts.shift();
   const cat = ROUTE_CATS.find((c) => CAT_SEG[lang][c] === parts[0]);
   if (!cat) return { lang };
-  const m = (parts[1] || "").match(cat === "set" ? /-(\d+)$/ : /-(\d+-\d+)$/);
+  const m = (parts[1] || "").match(ONE_ID.includes(cat) ? /-(\d+)$/ : /-(\d+-\d+)$/);
   return { lang, cat, id: m ? m[1] : null };
 }

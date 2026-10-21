@@ -5,7 +5,8 @@ import { MAIN_SITE } from "../routes.js";
 
 const MARK = "Galeria Shaiya · " + new URL(MAIN_SITE).host;   // assinatura do "Baixar imagem"
 
-const MOTIONS = ["idle", "walk", "run"];
+const MOTIONS = ["idle", "walk", "run", "attack", "die"];
+const EXTRA = ["attack", "die"];   // só monstros têm: o botão aparece apenas quando o modelo traz a animação
 
 export default function Stage({ spec, motion, spin, dye, anims, onMotion, onSpin, onScene, onMasks, side, active, onActivate, t }) {
   const canvasRef = useRef(null), stageRef = useRef(null), viewerRef = useRef(null);
@@ -68,7 +69,7 @@ export default function Stage({ spec, motion, spin, dye, anims, onMotion, onSpin
       {status && <div className="msg">{t("st." + status)}</div>}
       <div className="bar">
         <span className="vbtns" role="group" aria-label={t("motion")}>
-          {MOTIONS.map((m) => (
+          {MOTIONS.filter((m) => !EXTRA.includes(m) || (anims && anims[m])).map((m) => (
             <button key={m} type="button" className="vbtn" aria-pressed={motion === m} disabled={anims ? !anims[m] : false} onClick={() => onMotion(m)}>{t("mo." + m)}</button>
           ))}
         </span>

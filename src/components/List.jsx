@@ -1,9 +1,12 @@
 import { useEffect, useRef } from "react";
+import { mobSummary } from "../catalog.js";
 
 const cap = (s) => s.charAt(0).toUpperCase() + s.slice(1);
 
-// Linha de baixo: tipo (armadura/acessórios no set, postura na arma) + quantos itens têm o visual
+// Linha de baixo: tipo (armadura/acessórios no set, postura na arma) + quantos itens têm o visual; no monstro,
+// nível e elemento
 function sub(g, t) {
+  if (g.cat === "monster") return mobSummary(g, t);
   const n = (g.items || []).length;
   const count = n === 1 ? t("list.one") : t("list.many", { n });
   if (g.cat === "set") return `${t(g.f ? "set.armor" : "set.acc")} · ${count}`;

@@ -1,4 +1,4 @@
-import { statChips, synText, charCode, CLASSES, itemFits } from "../catalog.js";
+import { statChips, synText, charCode, CLASSES, itemFits, mobVariant } from "../catalog.js";
 
 const nameOf = (list, k) => { const g = list.find((x) => x.k === k); return g ? g.name : null; };
 
@@ -37,8 +37,27 @@ function Synergy({ syn, t }) {
   );
 }
 
-// catalog = lista localizada (mesmos índices k do catálogo bruto); gear = sets/armas localizados
-export default function Details({ tab, catalog, lists, gear, sel, dress, onTry, t }) {
+// catalog = lista localizada (mesmos índices k do catálogo bruto); gear = sets/armas localizados; lang = números
+export default function Details({ tab, catalog, lists, gear, sel, dress, onTry, lang, t }) {
+  if (tab === "monster") {
+    const g = lists.monster.find((x) => x.k === sel.monster);
+    if (!g) return null;
+    return (
+      <section className="details" aria-live="polite">
+        <div className="label">{t("cat.monster")}</div>
+        <h2>{g.name}</h2>
+        <div className="chips"><span className="stat">{g.el ? t("mob.el", { e: t("el." + g.el) }) : t("mob.noel")}</span></div>
+        <div className="label">{t("mob.variants")}</div>
+        <ul className="itemlist">
+          {g.v.map((v) => (
+            <li key={v[0]}><div className="ithead"><code>{v[0]}</code><span>{mobVariant(v, t, lang)}</span></div></li>
+          ))}
+        </ul>
+        <div className="model">{t("det.model", { m: g.f.replace(".json", ""), a: g.anims.length ? g.anims.map((a) => t("mol." + a)).join(", ") : t("det.noanim") })}</div>
+      </section>
+    );
+  }
+
   const who = t("who", { race: t("race." + dress.race), sex: t("who." + dress.sex) }) + (dress.cls ? ` (${t("cls." + dress.cls)})` : "");
 
   if (tab === "dress") {

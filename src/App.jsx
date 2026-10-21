@@ -14,6 +14,7 @@ import Seg from "./components/Seg.jsx";
 
 const RIDER_TABS = ["costume", "set", "weapon", "mount", "wing"];   // abas que mostram o item num personagem (raça/gênero à escolha)
 const GEAR_TABS = ["set", "weapon"];                                // vêm de gear.json (carregado à parte)
+const LAZY_TABS = [...GEAR_TABS, "monster"];                        // + monsters.json: listas que chegam depois do catálogo
 const DYE_CATS = ["costume", "wing", "pet", "mount"];
 const reducedMotion = () => typeof matchMedia === "function" && matchMedia("(prefers-reduced-motion: reduce)").matches;
 const getJSON = (path) => fetch(DATA_BASE + path).then((r) => { if (!r.ok) throw new Error("HTTP " + r.status); return r.json(); });
@@ -33,6 +34,7 @@ export default function App() {
   const [search, setSearch] = useState(null);   // nomes nos 3 idiomas, para a busca
   const [data, setData] = useState(null);
   const [gear, setGear] = useState(null);       // gear.json: sets e armas (null = carregando, false = falhou)
+  const [mobs, setMobs] = useState(null);       // monsters.json: monstros (null = carregando, false = falhou)
   const [error, setError] = useState(null);
   const [tab, setTab] = useState("dress");
   const [q, setQ] = useState("");
@@ -42,8 +44,8 @@ export default function App() {
   // comparar: dois lados A e B lado a lado; o lado "ativo" recebe os cliques da lista, do provador, da pintura e da raça/classe.
   const [cmp, setCmp] = useState(false);
   const [side, setSide] = useState("A");
-  const [sel, setSel] = useState({ costume: 0, set: null, weapon: null, mount: null, wing: null, pet: null });   // seleção das abas de catálogo
-  const [selB, setSelB] = useState({ costume: 0, set: null, weapon: null, mount: null, wing: null, pet: null });
+  const [sel, setSel] = useState({ costume: 0, set: null, weapon: null, mount: null, wing: null, pet: null, monster: null });   // seleção das abas de catálogo
+  const [selB, setSelB] = useState({ costume: 0, set: null, weapon: null, mount: null, wing: null, pet: null, monster: null });
   const initialDress = () => {
     const p = new URLSearchParams(location.search);
     const c = CLASSES.find((x) => x.id === p.get("cls")) || CLASSES[0];
@@ -76,14 +78,14 @@ export default function App() {
         setDress((s) => ({ ...s, ...dressSeed }));
         setDressB((s) => ({ ...s, ...dressSeed }));
         const first = (c) => (byCat(c)[0] ? byCat(c)[0].k : null);
-        const next = { costume: 0, set: null, weapon: null, mount: first("mount"), wing: first("wing"), pet: first("pet") };
+        const next = { costume: 0, set: null, weapon: null, mount: first("mount"), wing: first("wing"), pet: first("pet"), monster: null };
         const h = location.hash.slice(1), m = h.match(/^(costume|set|weapon|mount|wing|pet)-(\d+)$/);
         if (m) { setTab(m[1]); next[m[1]] = +m[2]; }
         else if (TABS.includes(h)) setTab(h);
         const r = routeRef.current;
         if (r) {
           setTab(r.cat);
-          if (!GEAR_TABS.includes(r.cat)) {
+          if (!LAZY_TABS.includes(r.cat)) {
             const g = r.id && byCat(r.cat).find((x) => itemId(r.cat, x) === r.id);
             if (g) next[r.cat] = g.k;
             routeRef.current = null;
@@ -96,6 +98,7 @@ export default function App() {
       .catch((e) => { if (!dead) setError(e); });
     getJSON("i18n/search.json").then(setSearch).catch(() => { /* busca fica só em PT */ });
     getJSON("gear.json").then((g) => { if (!dead) setGear(g); }).catch(() => { if (!dead) setGear(false); });
+    getJSON("monsters.json").then((j) => { if (!dead) setMobs(j); }).catch(() => { if (!dead) setMobs(false); });
     return () => { dead = true; };
   }, []);
 
@@ -132,6 +135,11 @@ export default function App() {
     };
   }, [gear, li]);
 
+  // monstros: monsters.json traz o nome em [pt, es, en] (tabelas DBMonsterText do cliente)
+  const mobL = useMemo(() => (mobs
+    ? mobs.mobs.map((g, k) => ({ ...g, k, cat: "monster", name: g.name[li] || g.name[0], hay: norm(g.name.join(" ")) }))
+    : null), [mobs, li]);
+
   // ordem alfabética do idioma escolhido (ignora o prefixo [SP]/(SP))
   const lists = useMemo(() => {
     if (!loc) return null;
@@ -147,24 +155,27 @@ export default function App() {
       mount: sorted(loc.catalog.filter((g) => g.cat === "mount")),
       wing: sorted(loc.catalog.filter((g) => g.cat === "wing")),
       pet: sorted(loc.catalog.filter((g) => g.cat === "pet")),
+      monster: mobL ? sorted(mobL) : [],
     };
-  }, [loc, gearL, lang]);
+  }, [loc, gearL, mobL, lang]);
 
-  // set/arma do endereço: abre quando o gear.json chega (null = carregando, false = falhou)
+  // set/arma/monstro do endereço: abre quando o gear.json / monsters.json chega (null = carregando, false = falhou)
   useEffect(() => {
     const r = routeRef.current;
-    if (!r || !GEAR_TABS.includes(r.cat) || gear == null) return;
+    if (!r || !LAZY_TABS.includes(r.cat)) return;
+    const src = r.cat === "monster" ? mobs : gear;
+    if (src == null) return;
     routeRef.current = null;
-    const arr = gear ? (r.cat === "set" ? gear.sets : gear.weapons) : [];
+    const arr = !src ? [] : r.cat === "set" ? src.sets : r.cat === "weapon" ? src.weapons : src.mobs;
     const k = r.id ? arr.findIndex((g) => itemId(r.cat, g) === r.id) : -1;
     if (k >= 0) setSel((s) => ({ ...s, [r.cat]: k }));
-  }, [gear]);
+  }, [gear, mobs]);
 
-  // aba de set/arma sem seleção (antes do gear.json chegar): escolhe o primeiro da lista. Confere o estado
+  // aba de set/arma/monstro sem seleção (antes da lista chegar): escolhe o primeiro da lista. Confere o estado
   // ATUAL (não o do render) para não passar por cima do item que o endereço acabou de abrir.
   useEffect(() => {
     if (!lists) return;
-    for (const c of GEAR_TABS) {
+    for (const c of LAZY_TABS) {
       const first = lists[c][0];
       if (!first) continue;
       setSel((s) => (s[c] == null ? { ...s, [c]: first.k } : s));
@@ -205,6 +216,10 @@ export default function App() {
       const g = data.catalog[selX.pet];
       return g ? { kind: "single", cat: "pet", file: "m/" + g.f } : null;
     }
+    if (tab === "monster") {   // como o pet: o modelo sozinho (mob/NNN.json, um arquivo por modelo do Monster.MON)
+      const g = mobs && selX.monster != null ? mobs.mobs[selX.monster] : null;
+      return g ? { kind: "single", cat: "monster", file: "mob/" + g.f } : null;
+    }
     const code = charCode(dressX.race, dressX.cls, dressX.sex);
     const s = { kind: "char", code, race: dressX.race, costume: null };
     const setPath = (k) => { const g = gear && k != null ? gear.sets[k] : null; return g && g.f && g.codes.includes(code) ? `s/${g.f}/${code}.json` : null; };
@@ -233,7 +248,7 @@ export default function App() {
       if (sh) s.shield = sh;
     }
     return s;
-  }, [data, gear, tab]);
+  }, [data, gear, mobs, tab]);
   const spec = useMemo(() => buildSpec(sel, dress), [buildSpec, sel, dress]);
   const specB = useMemo(() => cmp ? buildSpec(selB, dressB) : null, [cmp, buildSpec, selB, dressB]);
 
@@ -264,7 +279,11 @@ export default function App() {
   const target = dyeTargets.includes(dyeTarget) ? dyeTarget : dyeTargets[0];
   const hasMask = !!(curScene && curMasks && target && (curScene.dyeKeys[target] || []).some((k) => curMasks[k]));
 
-  const onTab = useCallback((c) => { setTab(c); setQ(""); }, []);
+  // atacando/morrendo só existem nos monstros: fora da aba, volta para parado
+  const onTab = useCallback((c) => {
+    setTab(c); setQ("");
+    if (c !== "monster") setMotion((m) => (m === "attack" || m === "die" ? "idle" : m));
+  }, []);
   const onCmp = useCallback((v) => {
     setCmp(v);
     if (!v) setSide("A");
@@ -297,8 +316,9 @@ export default function App() {
   const onDye = useCallback((cat, p) => setCurDye((s) => ({ ...s, [cat]: p })), [setCurDye]);
   const onSelect = useCallback((k) => setCurSel((s) => ({ ...s, [tab]: k })), [setCurSel, tab]);
 
-  const gearWait = GEAR_TABS.includes(tab) && !gear;
-  const counts = Object.fromEntries(["costume", "set", "weapon", "mount", "wing", "pet"].map((c) => [c, GEAR_TABS.includes(c) && !gear ? "…" : lists ? lists[c].length : 0]));
+  const lazySrc = (c) => (c === "monster" ? mobs : gear);   // null = carregando, false = falhou
+  const lazyWait = LAZY_TABS.includes(tab) && !lazySrc(tab);
+  const counts = Object.fromEntries(["costume", "set", "weapon", "mount", "wing", "pet", "monster"].map((c) => [c, LAZY_TABS.includes(c) && !lazySrc(c) ? "…" : lists ? lists[c].length : 0]));
 
   return (
     <div className="wrap">
@@ -321,8 +341,10 @@ export default function App() {
             <div className="leftcol">
               {tab === "dress"
                 ? <DressForm t={t} dress={curDress} lists={lists} gear={!!gear} onChange={onDress} />
-                : gearWait
-                  ? <p className="notice">{gear === false ? t("load.error", { e: "gear.json" }) : t("load.gear")}</p>
+                : lazyWait
+                  ? <p className="notice">{lazySrc(tab) === false
+                    ? t("load.error", { e: tab === "monster" ? "monsters.json" : "gear.json" })
+                    : t(tab === "monster" ? "load.mobs" : "load.gear")}</p>
                   : <List t={t} tab={tab} rows={rows} cur={curSel[tab]} onSelect={onSelect} />}
             </div>
             <div className="viewcol">
@@ -333,7 +355,7 @@ export default function App() {
               {cmp && <p className="cmphint">{t(side === "B" ? "cmp.hint_b" : "cmp.hint_a")}</p>}
               {RIDER_TABS.includes(tab) && <RaceSex t={t} dress={curDress} onDress={onDress} />}
               {dyeTargets.length > 0 && <DyePanel t={t} targets={dyeTargets} target={target} onTarget={setDyeTarget} dye={curDye} onChange={onDye} hasMask={hasMask} />}
-              {!gearWait && <Details t={t} tab={tab} catalog={loc.catalog} lists={lists} gear={gearL} sel={curSel} dress={curDress} onTry={onTry} />}
+              {!lazyWait && <Details t={t} lang={lang} tab={tab} catalog={loc.catalog} lists={lists} gear={gearL} sel={curSel} dress={curDress} onTry={onTry} />}
             </div>
           </div>
         </>
