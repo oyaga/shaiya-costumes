@@ -242,6 +242,7 @@ export default function App() {
     s.costume = c ? `k/${c.f}/${code}.json` : null;
     if (tab === "dress") {
       for (const f of ["wing", "pet", "mount"]) { const k = dressX[f]; if (k != null && data.catalog[k]) s[f] = "m/" + data.catalog[k].f; }
+      if (s.pet) s.petScale = data.catalog[dressX.pet].sc || 1;   // escala do jogo (pets: modelo grande × escala pequena)
       if (!s.costume) s.set = setPath(dressX.set);   // a fantasia cobre a armadura, como no jogo
       const w = wpn(dressX.weapon), sh = wpn(dressX.shield);
       if (w) s.weapon = w;

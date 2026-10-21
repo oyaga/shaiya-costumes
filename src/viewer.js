@@ -7,6 +7,8 @@ import { RACE_IX } from "./catalog.js";
 
 const clamp255 = (v) => Math.max(0, Math.min(255, Math.round(v * 255)));
 const PET_OFFSET = 1.1;
+// pet = monstro do jogo: escala (sc do catálogo) e depois a posição ao lado do personagem
+const petPlace = (s, x, y, z) => { const m = translation(x, y, z); m[0] = m[5] = m[10] = s; return m; };
 
 class Actor {
   constructor(meshes, anims) {   // meshes: [{mesh, map, dyeable}]
@@ -123,7 +125,7 @@ export class Viewer {
   }
 
   // ── cena ──
-  // spec: { kind: "single", cat, file } | { kind: "char", code, race, costume?, set?, weapon?, shield?, wing?, pet?, mount? }
+  // spec: { kind: "single", cat, file } | { kind: "char", code, race, costume?, set?, weapon?, shield?, wing?, pet?, petScale?, mount? }
   // (caminhos relativos a base; weapon/shield = { f, kind })
   async build(spec) {
     const my = ++this.token;
@@ -254,13 +256,15 @@ export class Viewer {
       if (a.wingFit) a.wing.update(sec, mul(a.wingFit.L, a.char.boneMatrix(a.wingFit.bone), new Float32Array(16)));
       else { const p = a.char.bonePos(a.back); a.wing.update(sec, translation(p[0], p[1], p[2])); }
     }
-    if (a.pet) a.pet.update(sec, translation(a.mount ? PET_OFFSET + 0.9 : PET_OFFSET, 0, 0.4));
+    if (a.pet) a.pet.update(sec, petPlace(this.spec.petScale || 1, a.mount ? PET_OFFSET + 0.9 : PET_OFFSET, 0, 0.4));
   }
 
   // ── câmera ──
   computeFit() {
     const box = new THREE.Box3();
-    for (const a of Object.values(this.actors || {})) if (a && a.parts) for (const p of a.parts) { p.g.computeBoundingBox(); box.union(p.g.boundingBox); }
+    // peça que a animação esconde jogando para longe (Bebê Panda: 1e6) não entra no enquadramento
+    const near = (b) => Math.max(-b.min.x, -b.min.y, -b.min.z, b.max.x, b.max.y, b.max.z) < 1e4;
+    for (const a of Object.values(this.actors || {})) if (a && a.parts) for (const p of a.parts) { p.g.computeBoundingBox(); if (near(p.g.boundingBox)) box.union(p.g.boundingBox); }
     if (box.isEmpty()) box.setFromCenterAndSize(new THREE.Vector3(0, 1, 0), new THREE.Vector3(2, 2, 2));
     this.fit = { size: box.getSize(new THREE.Vector3()), c: box.getCenter(new THREE.Vector3()) };
   }
