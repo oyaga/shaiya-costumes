@@ -27,7 +27,7 @@ export default function List({ tab, rows, cur, onSelect, t }) {
       {rows.length ? rows.map((g) => (
         <li key={g.k}>
           <button type="button" className={g.ic ? "row hasico" : "row"} aria-current={g.k === cur} onClick={() => onSelect(g.k)}>
-            <Icon ic={g.ic} size={40} />
+            <Icon ic={g.ic} size={48} />
             <span className="nm">{g.name}</span>
             <span className="sub">{sub(g, t)}</span>
             <span className="cnt">#{String(g.k).padStart(3, "0")}</span>

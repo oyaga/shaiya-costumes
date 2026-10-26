@@ -326,21 +326,23 @@ export default function App() {
 
   return (
     <div className="wrap">
-      <header>
-        <div className="toprow">
-          <div className="eyebrow">{t("eyebrow", { date: DATA_DATE })}</div>
-          <Seg className="langs" label={t("lang")} options={LANGS} value={lang} onChange={setLang} />
-        </div>
-        <h1>Galeria Shaiya</h1>
-        <p className="lede">{t("lede")}</p>
-      </header>
+      <div className="top">
+        <header className="brand">
+          <svg className="logo" width="40" height="40" viewBox="0 0 40 40" aria-hidden="true"><path d="M20 3 35 11.5v17L20 37 5 28.5v-17z" fill="none" stroke="currentColor" strokeWidth="1.6" /><path d="M20 11 28 15.5v9L20 29 12 24.5v-9z" fill="currentColor" fillOpacity="0.16" stroke="currentColor" strokeWidth="1.2" /></svg>
+          <div>
+            <h1>Galeria Shaiya</h1>
+            <div className="eyebrow">{t("eyebrow", { date: DATA_DATE })}</div>
+          </div>
+        </header>
+        {data && lists && <Toolbar t={t} tab={tab} onTab={onTab} q={q} onQ={setQ} cls={cls} onCls={onCls} counts={counts} cmp={cmp} onCmp={onCmp} side={side} onSide={setSide} onSwap={onSwap} />}
+        <Seg className="langs" label={t("lang")} options={LANGS} value={lang} onChange={setLang} />
+      </div>
 
       {error && <p className="notice">{t("load.error", { e: String(error.message || error) })}</p>}
       {!data && !error && <p className="notice">{t("load.catalog")}</p>}
 
       {data && lists && (
         <>
-          <Toolbar t={t} tab={tab} onTab={onTab} q={q} onQ={setQ} cls={cls} onCls={onCls} counts={counts} cmp={cmp} onCmp={onCmp} side={side} onSide={setSide} onSwap={onSwap} />
           <div className="layout">
             <div className="leftcol">
               {tab === "dress"
@@ -358,14 +360,17 @@ export default function App() {
               </div>
               {cmp && <p className="cmphint">{t(side === "B" ? "cmp.hint_b" : "cmp.hint_a")}</p>}
               {RIDER_TABS.includes(tab) && <RaceSex t={t} dress={curDress} onDress={onDress} />}
+            </div>
+            <aside className="sidecol">
               {dyeTargets.length > 0 && <DyePanel t={t} targets={dyeTargets} target={target} onTarget={setDyeTarget} dye={curDye} onChange={onDye} hasMask={hasMask} />}
               {!lazyWait && <Details t={t} lang={lang} tab={tab} catalog={loc.catalog} lists={lists} gear={gearL} sel={curSel} dress={curDress} onTry={onTry} />}
-            </div>
+            </aside>
           </div>
         </>
       )}
 
       <footer className="foot">
+        <p className="lede">{t("lede")}</p>
         <p>{t("foot.hint")}</p>
         <p>{t("foot.legal")} <a href={REPO_URL} target="_blank" rel="noopener noreferrer">{t("foot.code")}</a></p>
       </footer>
