@@ -59,6 +59,13 @@ h1 { font-family: var(--display); font-weight: 400; font-size: var(--s3); line-h
 .row .sub { grid-column: 1; color: var(--muted); font-size: var(--s--1); }
 .row .cnt { grid-row: 1 / span 2; grid-column: 2; align-self: center; font-family: var(--mono); font-size: 0.75rem; color: var(--muted); font-variant-numeric: tabular-nums; }
 .empty { color: var(--muted); padding: 16px 10px; }
+/* ícone oficial do item (Icon.jsx): atlas como fundo, deslocado até a célula */
+.ico { display: block; flex: none; border-radius: 8px; background-repeat: no-repeat; background-color: var(--surface); box-shadow: 0 0 0 1px var(--line); }
+.row.hasico { grid-template-columns: auto minmax(0, 1fr) auto; column-gap: 12px; }
+.row.hasico .ico { grid-row: 1 / span 2; grid-column: 1; align-self: center; }
+.row.hasico .nm, .row.hasico .sub { grid-column: 2; }
+.row.hasico .cnt { grid-column: 3; }
+.details .hd { display: flex; align-items: center; gap: 14px; }
 
 .form { display: grid; gap: 14px; }
 .field { display: grid; gap: 6px; }

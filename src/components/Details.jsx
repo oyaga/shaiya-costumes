@@ -1,6 +1,12 @@
 import { statChips, synText, charCode, CLASSES, itemFits, mobVariant } from "../catalog.js";
+import Icon from "./Icon.jsx";
 
-const nameOf = (list, k) => { const g = list.find((x) => x.k === k); return g ? g.name : null; };
+// Título do visual; com o ícone oficial do cliente ao lado, quando há
+const Heading = ({ g }) => (g.ic
+  ? <div className="hd"><Icon ic={g.ic} size={48} /><h2>{g.name}</h2></div>
+  : <h2>{g.name}</h2>);
+
+const nameOf =(list, k) => { const g = list.find((x) => x.k === k); return g ? g.name : null; };
 
 // Classes que usam o item (bit de classe + raça/facção da ficha)
 function classLine(st, t) {
@@ -83,7 +89,7 @@ export default function Details({ tab, catalog, lists, gear, sel, dress, onTry, 
     return (
       <section className="details" aria-live="polite">
         <div className="label">{t("cat.costume")} · {who}</div>
-        <h2>{c.name}</h2>
+        <Heading g={c} />
         <div className="label">{t("det.items")}</div>
         <Items items={c.items || [[c.t, c.i, c.name]]} t={t} />
         <div className="btnrow"><button type="button" className="btn primary" onClick={() => onTry("costume", c.k)}>{t("btn.try")}</button></div>
@@ -131,7 +137,7 @@ export default function Details({ tab, catalog, lists, gear, sel, dress, onTry, 
   return (
     <section className="details" aria-live="polite">
       <div className="label">{t("cat." + g.cat)}{g.cat !== "pet" && ` · ${who}`}</div>
-      <h2>{g.name}</h2>
+      <Heading g={g} />
       {g.desc && <p className="desc">{g.desc}</p>}
       <div className="label">{t("det.items")}</div>
       <Items items={g.items} t={t} />
