@@ -183,7 +183,7 @@ for (const lang of ROUTE_LANGS) {
         body: `<div class="wrap seo"><header>${crumbHtml(crumbs)}<h1>${esc(g.name)}</h1>`
           + `<p class="lede">${esc(intro)}</p></header>`
           + (gdesc ? `<p class="desc">${esc(gdesc)}</p>` : "")
-          + `<section><h2>${esc(t(isMob ? "mob.variants" : "seo.versions"))}</h2><ul>${versions}</ul></section>`
+          + `<section><h2>${esc(t(isMob ? "mob.variants" : "seo.versions"))}</h2>${isMob ? `<p>${esc(t("mob.note"))}</p>` : ""}<ul>${versions}</ul></section>`
           + `<section><h2>${esc(t("seo.more", { tab: t("tab." + c) }))}</h2><ul class="cols">`
           + near.map((n) => `<li><a href="${esc(n.rel)}">${esc(n.name)}</a></li>`).join("")
           + `</ul><p><a href="${esc(catCrumb.rel)}">${esc(t("seo.all"))}</a></p></section>`

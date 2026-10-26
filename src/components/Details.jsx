@@ -54,6 +54,7 @@ export default function Details({ tab, catalog, lists, gear, sel, dress, onTry, 
         <h2>{g.name}</h2>
         <div className="chips"><span className="stat">{g.el ? t("mob.el", { e: t("el." + g.el) }) : t("mob.noel")}</span></div>
         <div className="label">{t("mob.variants")}</div>
+        <p className="desc note">{t("mob.note")}</p>
         <ul className="itemlist">
           {g.v.map((v) => (
             <li key={v[0]}><div className="ithead"><code>{v[0]}</code><span>{mobVariant(v, t, lang)}</span></div></li>
