@@ -11,7 +11,7 @@ import fs from "node:fs";
 import path from "node:path";
 import { fileURLToPath } from "node:url";
 import { makeT, HTML_LANG } from "../src/i18n.js";
-import { statChips, mobSummary, mobVariant, LANG_IX } from "../src/catalog.js";
+import { statChips, mobSummary, mobVariant, visualName, LANG_IX } from "../src/catalog.js";
 import { MAIN_SITE, ROUTE_LANGS, ROUTE_CATS, itemId, itemPath, catPath, homePath } from "../src/routes.js";
 
 const repo = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "..");
@@ -48,7 +48,8 @@ function buildLists(lang) {
     const l = tr && tr[kind][k];
     const items = localizeItems(g.items || [[g.t, g.i, g.name]], tr);
     const desc = l && l.desc != null ? l.desc : g.desc;
-    return { cat: cat || g.cat, raw: g, name: l ? l.name : g.name, desc: desc || (items[0] && items[0][4]) || "", items };
+    const own = l ? l.name : g.name;
+    return { cat: cat || g.cat, raw: g, name: g.cat === "wing" || g.cat === "pet" ? visualName(own, items) : own, slug: own, desc: desc || (items[0] && items[0][4]) || "", items };
   });
   const it = (x) => [x[0], x[1], x[2][li] || x[2][0], x[3], x[4][li] || x[4][0]];
   const costumes = mk(catalog.costumes, "costumes", "costume");
@@ -69,7 +70,7 @@ function buildLists(lang) {
     out[c].sort((x, y) => sortKey(x).localeCompare(sortKey(y), lang, { sensitivity: "base" }));
     for (const g of out[c]) {
       g.id = itemId(c, g.raw);
-      g.rel = itemPath(lang, c, g.name, g.id);
+      g.rel = itemPath(lang, c, g.slug || g.name, g.id);
     }
   }
   return out;

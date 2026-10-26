@@ -1,5 +1,5 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
-import { TABS, charCode, raceClasses, LANG_IX, CLASSES, gearFits, norm } from "./catalog.js";
+import { TABS, charCode, raceClasses, LANG_IX, CLASSES, gearFits, norm, visualName } from "./catalog.js";
 import { DATA_BASE, DATA_DATE, REPO_URL, ROOT_PATH } from "./config.js";
 import { LANGS, HTML_LANG, makeT, initialLang, saveLang } from "./i18n.js";
 import { ROUTE_CATS, parseRoute, itemId, itemPath, catPath, homePath } from "./routes.js";
@@ -119,7 +119,10 @@ export default function App() {
       const l = tr && tr[kind][k];
       const items = localizeItems(g.items || [[g.t, g.i, g.name]], tr);
       const hay = norm([g.name, ...(g.items || []).map((x) => x[2]), search ? search[kind][k] : ""].join(" "));
-      return { ...g, name: l ? l.name : g.name, desc: l && l.desc != null ? l.desc : g.desc, items, hay };
+      const own = l ? l.name : g.name;
+      // asa/pet: um visual com vários níveis e apelidos vira "Mochi / Tama" (o endereço segue o nome do cliente).
+      // Montaria fica de fora: os itens dela são pedras de invocação de montarias diferentes.
+      return { ...g, name: g.cat === "wing" || g.cat === "pet" ? visualName(own, items) : own, slug: own, desc: l && l.desc != null ? l.desc : g.desc, items, hay };
     });
     return { catalog: mk(data.catalog, "catalog"), costumes: mk(data.costumes, "costumes") };
   }, [data, tr, search]);
@@ -190,7 +193,7 @@ export default function App() {
     if (ROUTE_CATS.includes(tab)) {
       const g = sel[tab] != null ? lists[tab].find((x) => x.k === sel[tab]) : null;
       if (g) {
-        path = itemPath(lang, tab, g.name, itemId(tab, g));
+        path = itemPath(lang, tab, g.slug || g.name, itemId(tab, g));
         title = t("seo.item_title", { name: g.name, cat: t("cat." + tab) });
       } else {
         path = catPath(lang, tab);

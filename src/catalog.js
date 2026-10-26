@@ -17,6 +17,37 @@ export const LANG_IX = { pt: 0, es: 1, en: 2 };   // ordem dos nomes [pt, es, en
 
 export const norm = (s) => String(s).normalize("NFD").replace(/[̀-ͯ]/g, "").toLowerCase();
 
+// Nome de exibição de montaria/asa/pet. O cliente guarda uma linha por nível/duração ("Ala Suka Lv.1", "Ala Suka
+// Lv.61", "Tama Lv.1 30d") e o mesmo visual aparece com apelidos diferentes ("Mochi", "Tama", "Pon Pon"). Tira
+// nível, duração e o resto que não identifica e junta os nomes distintos: "Mochi / Tama / Pon Pon".
+const STRIP = [
+  /\xc2(?=\s|$)/g,   // lixo de codificação que veio nos textos em inglês ("Red AdmiralÂ ")
+  /\s*\((?:\d|\+|(?:lvl?|nvl?|n[ií]vel|nivel|level|n)\b|perm|pe\.|excl)[^)]*(?:\)|$)/i,   // (30d) (1-Dia) (+10) (Nível 1) (Perm.) (Excl.) e cortes "(30 ..."
+  /\s+(?:\d+\s*(?:d|dias?|days?|h)|\+\d+|(?:lvl?|nvl?|n[ií]vel|nivel|level|n)\.?\s*\d+)\s*$/i,   // 30d · +10 · Lv.1 · Nv. 61 · N. 1 · nível 1
+];
+export function baseName(s) {
+  s = String(s).trim();
+  for (let prev; prev !== s;) { prev = s; for (const re of STRIP) s = s.replace(re, "").trim(); }
+  return s;
+}
+const nameKey = (s) => norm(s).replace(/^[[(]sp[\])]\s*/, "");
+// a e b diferem em no máximo 1 letra ("Mochi"/"Mochy"): a mesma palavra traduzida de dois jeitos
+function near1(a, b) {
+  if (Math.abs(a.length - b.length) > 1 || Math.min(a.length, b.length) < 5) return false;
+  let i = 0;
+  while (i < a.length && a[i] === b[i]) i++;
+  return a.slice(i + 1) === b.slice(i) || a.slice(i) === b.slice(i + 1) || a.slice(i + 1) === b.slice(i + 1);
+}
+export function visualName(name, items, max = 3) {
+  const out = [];
+  for (const raw of [name, ...items.map((x) => x[2])]) {
+    const b = baseName(raw), n = nameKey(b);
+    if (n && !out.some((o) => o.n.includes(n) || n.includes(o.n) || near1(o.n, n))) out.push({ b, n });
+  }
+  const shown = out.slice(0, max).map((o) => o.b).join(" / ");
+  return out.length > max ? `${shown} +${out.length - max}` : shown;
+}
+
 // As 12 classes do jogo: bit da classe na ficha do item (o mesmo para o par Luz/Fúria), a raça que a joga e o
 // corpo do personagem (ver CODES).
 export const CLASSES = [
