@@ -1,4 +1,4 @@
-import { statChips, synText, charCode, CLASSES, itemFits, mobVariant } from "../catalog.js";
+import { statChips, synText, charCode, CLASSES, itemFits, mobVariant, isTransform } from "../catalog.js";
 import Icon from "./Icon.jsx";
 
 // Título do visual; com o ícone oficial do cliente ao lado, quando há
@@ -137,7 +137,7 @@ export default function Details({ tab, catalog, lists, gear, sel, dress, onTry, 
   if (!g) return null;
   return (
     <section className="details" aria-live="polite">
-      <div className="label">{t("cat." + g.cat)}{g.cat !== "pet" && ` · ${who}`}</div>
+      <div className="label">{t("cat." + g.cat)}{g.cat !== "pet" && !isTransform(g) && ` · ${who}`}</div>
       <Heading g={g} />
       {g.desc && <p className="desc">{g.desc}</p>}
       <div className="label">{t("det.items")}</div>

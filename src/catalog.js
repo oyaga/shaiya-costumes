@@ -13,6 +13,8 @@ export const CODES = {
 };
 export const charCode = (race, cls, sex) => CODES[race][(CLASSES.find((c) => c.id === cls && c.race === race) || {}).body || 0][sex];
 export const RACE_IX = { hu: 0, el: 1, vi: 2, de: 3 };
+// "Runa de Transformação" vem como montaria (tipo 125), mas no jogo o personagem vira a criatura: nada de cavaleiro em cima
+export const isTransform = (g) => !!g && g.cat === "mount" && /transforma/i.test(g.name);
 export const LANG_IX = { pt: 0, es: 1, en: 2 };   // ordem dos nomes [pt, es, en] em gear.json
 
 export const norm = (s) => String(s).normalize("NFD").replace(/[̀-ͯ]/g, "").toLowerCase();

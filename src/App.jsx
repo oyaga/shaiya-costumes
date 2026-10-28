@@ -1,5 +1,5 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
-import { TABS, charCode, raceClasses, LANG_IX, CLASSES, gearFits, norm, visualName } from "./catalog.js";
+import { TABS, charCode, raceClasses, LANG_IX, CLASSES, gearFits, norm, visualName, isTransform } from "./catalog.js";
 import { DATA_BASE, DATA_DATE, REPO_URL, ROOT_PATH } from "./config.js";
 import { LANGS, HTML_LANG, makeT, initialLang, saveLang } from "./i18n.js";
 import { ROUTE_CATS, parseRoute, itemId, itemPath, catPath, homePath } from "./routes.js";
@@ -230,6 +230,7 @@ export default function App() {
     if (tab === "mount" || tab === "wing") {
       const g = data.catalog[selX[tab]];
       if (!g) return null;
+      if (isTransform(g)) return { kind: "single", cat: "mount", file: "m/" + g.f };   // transformação: só a criatura, sem o avatar
       s[tab] = "m/" + g.f;
       return s;
     }
@@ -244,6 +245,8 @@ export default function App() {
     const c = costumeK != null ? data.costumes.find((x) => x.k === costumeK) : null;
     s.costume = c ? `k/${c.f}/${code}.json` : null;
     if (tab === "dress") {
+      const mt = dressX.mount != null ? data.catalog[dressX.mount] : null;
+      if (isTransform(mt)) return { kind: "single", cat: "mount", file: "m/" + mt.f };   // a transformação substitui o personagem
       for (const f of ["wing", "pet", "mount"]) { const k = dressX[f]; if (k != null && data.catalog[k]) s[f] = "m/" + data.catalog[k].f; }
       if (s.pet) s.petScale = data.catalog[dressX.pet].sc || 1;   // escala do jogo (pets: modelo grande × escala pequena)
       if (!s.costume) s.set = setPath(dressX.set);   // a fantasia cobre a armadura, como no jogo
@@ -359,7 +362,7 @@ export default function App() {
                 {cmp && <Stage t={t} spec={specB} motion={motion} spin={spin} dye={dyeB} anims={sceneB && sceneB.anims} onMotion={setMotion} onSpin={setSpin} onScene={setSceneB} onMasks={setMasksB} side="B" active={side === "B"} onActivate={() => setSide("B")} />}
               </div>
               {cmp && <p className="cmphint">{t(side === "B" ? "cmp.hint_b" : "cmp.hint_a")}</p>}
-              {RIDER_TABS.includes(tab) && <RaceSex t={t} dress={curDress} onDress={onDress} />}
+              {RIDER_TABS.includes(tab) && !(tab === "mount" && isTransform(data.catalog[curSel.mount])) && <RaceSex t={t} dress={curDress} onDress={onDress} />}
             </div>
             <aside className="sidecol">
               {dyeTargets.length > 0 && <DyePanel t={t} targets={dyeTargets} target={target} onTarget={setDyeTarget} dye={curDye} onChange={onDye} hasMask={hasMask} />}
