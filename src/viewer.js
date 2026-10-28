@@ -20,7 +20,9 @@ class Actor {
       g.setAttribute("normal", new THREE.BufferAttribute(N, 3));
       g.setAttribute("uv", new THREE.BufferAttribute(mesh.uv, 2));
       g.setIndex(new THREE.BufferAttribute(mesh.idx, 1));
-      const obj = new THREE.Mesh(g, new THREE.MeshLambertMaterial({ map, side: THREE.DoubleSide }));
+      // textura com transparência (WebP): o jogo recorta as ilhas vazias, então o site também (fantasias novas, como a Mascarada)
+      const cut = !!(map && map.userData && map.userData.cut);
+      const obj = new THREE.Mesh(g, new THREE.MeshLambertMaterial({ map, side: THREE.DoubleSide, alphaTest: cut ? 0.5 : 0 }));
       obj.frustumCulled = false;
       return { mesh, g, P, N, obj, base: map, dyeable: dyeable !== false };
     });
@@ -115,7 +117,7 @@ export class Viewer {
       const t = new THREE.TextureLoader().load(dataUri);
       t.flipY = false; t.colorSpace = THREE.SRGBColorSpace; t.wrapS = t.wrapT = THREE.RepeatWrapping;
       t.anisotropy = this.renderer.capabilities.getMaxAnisotropy();
-      t.userData = { id, key, uri: dataUri };   // a pintura precisa da imagem original e do nome (máscara)
+      t.userData = { id, key, uri: dataUri, cut: dataUri.startsWith("data:image/webp") };   // a pintura precisa da imagem original e do nome (máscara)
       this.texCache.set(id, t);
     }
     return this.texCache.get(id);

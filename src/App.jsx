@@ -46,14 +46,18 @@ export default function App() {
   const [side, setSide] = useState("A");
   const [sel, setSel] = useState({ costume: 0, set: null, weapon: null, mount: null, wing: null, pet: null, monster: null });   // seleção das abas de catálogo
   const [selB, setSelB] = useState({ costume: 0, set: null, weapon: null, mount: null, wing: null, pet: null, monster: null });
+  // Sem ?cls=/?sex= no endereço, o provador abre com classe e gênero sorteados (e visual sorteado, ver abaixo);
+  // com eles, abre exatamente na classe/gênero pedidos.
   const initialDress = () => {
     const p = new URLSearchParams(location.search);
-    const c = CLASSES.find((x) => x.id === p.get("cls")) || CLASSES[0];
-    return { race: c.race, cls: c.id, sex: p.get("sex") === "f" ? "f" : "m", costume: null, set: null, weapon: null, shield: null, wing: null, pet: null, mount: null };
+    const rnd = (a) => a[Math.floor(Math.random() * a.length)];
+    const c = CLASSES.find((x) => x.id === p.get("cls")) || (p.has("cls") ? CLASSES[0] : rnd(CLASSES));
+    const sex = p.get("sex") === "f" || p.get("sex") === "m" ? p.get("sex") : rnd(["m", "f"]);
+    return { race: c.race, cls: c.id, sex, costume: null, set: null, weapon: null, shield: null, wing: null, pet: null, mount: null };
   };
   // cls = classe do personagem (escolhe o corpo: ver CODES em catalog.js). ?cls=mage&sex=f no endereço abre nela.
   const [dress, setDress] = useState(initialDress);
-  const [dressB, setDressB] = useState(initialDress);
+  const [dressB, setDressB] = useState(() => dress);   // o lado B de Comparar começa igual ao A
   const [dye, setDye] = useState({ costume: null, wing: null, pet: null, mount: null });   // {h, s, v} ou null, por categoria
   const [dyeB, setDyeB] = useState({ costume: null, wing: null, pet: null, mount: null });
   const [dyeTarget, setDyeTarget] = useState("costume");
@@ -73,8 +77,9 @@ export default function App() {
         const catalog = d.catalog.map((g, k) => ({ ...g, k }));
         const costumes = d.costumes.map((c, k) => ({ ...c, k, cat: "costume" }));
         const byCat = (c) => (c === "costume" ? costumes : catalog.filter((g) => g.cat === c));
-        const pick = (name, list) => { const x = list.find((i) => norm(i.name).includes(norm(name))); return x ? x.k : null; };
-        const dressSeed = { costume: pick("Bobo", costumes), wing: pick("Pesadelo antes", byCat("wing")), pet: pick("Espantalho de Halloween", byCat("pet")) };
+        // provador de abertura: fantasia, asa e pet sorteados a cada visita
+        const rndK = (list) => (list.length ? list[Math.floor(Math.random() * list.length)].k : null);
+        const dressSeed = { costume: rndK(costumes), wing: rndK(byCat("wing")), pet: rndK(byCat("pet")) };
         setDress((s) => ({ ...s, ...dressSeed }));
         setDressB((s) => ({ ...s, ...dressSeed }));
         const first = (c) => (byCat(c)[0] ? byCat(c)[0].k : null);
