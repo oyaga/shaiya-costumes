@@ -1,4 +1,5 @@
-import { statChips, synText, charCode, CLASSES, itemFits, mobVariant, isTransform, mapSummary, lvText } from "../catalog.js";
+import { useState } from "react";
+import { statChips, synText, charCode, CLASSES, itemFits, mobVariant, isTransform, mapSummary, lvText, norm } from "../catalog.js";
 import Icon from "./Icon.jsx";
 
 // Título do visual; com o ícone oficial do cliente ao lado, quando há
@@ -44,8 +45,10 @@ function Synergy({ syn, t }) {
 }
 
 // Monstro ↔ mapa: linhas que levam de um ao outro (maps = { byId, mobById, appears, hl, onHl, onGoMap, onGoMob })
-function MapDetails({ g, lists, maps, t }) {
-  const mobs = g.m.map(([id, c, a]) => [maps.mobById[id], c, a]).filter((x) => x[0]);
+function MapDetails({ g, maps, t, lang }) {
+  const [f, setF] = useState("");
+  const nf = norm(f.trim());
+  const mobs = g.m.map(([id, c, a, vid]) => [maps.mobById[id], c, a, vid]).filter((x) => x[0] && (!nf || norm(x[0].name).includes(nf)));
   const to = g.to.filter((id) => id !== g.id && maps.byId[id]);
   return (
     <section className="details" aria-live="polite">
@@ -65,20 +68,23 @@ function MapDetails({ g, lists, maps, t }) {
       )}
       {mobs.length > 0 && (
         <>
-          <div className="label">{t("map.monsters")}</div>
+          <div className="label">{t("map.monsters")} · {g.m.length}</div>
+          {g.m.length > 8 && <input className="search mapfilter" type="search" placeholder={t("map.filter")} aria-label={t("map.filter")} value={f} onChange={(e) => setF(e.target.value)} />}
           <ul className="itemlist maplist">
-            {mobs.map(([mob, c, a]) => (
+            {mobs.map(([mob, c, a, vid]) => (
               <li key={mob.id} className={maps.hl === mob.id ? "on" : ""}>
                 <button type="button" className="rowbtn" aria-pressed={maps.hl === mob.id} onClick={() => maps.onHl(maps.hl === mob.id ? null : mob.id)}>
                   <span className="nm">{mob.name}</span>
-                  <span className="sub">{lvText(mob.lv[0], mob.lv[1], t)} · {t("map.mob_row", { a, c })}</span>
+                  <span className="sub">{mobVariant(mob.v.find((x) => x[0] === vid) || mob.v[0], t, lang)}{mob.el ? ` · ${t("el." + mob.el)}` : ""}</span>
+                  <span className="sub">{t("map.mob_row", { a, c })}</span>
                 </button>
-                <button type="button" className="mini" onClick={() => maps.onGoMob(mob.k)} title={t("map.seemob")}>↗</button>
+                {mob.k != null && <button type="button" className="mini" onClick={() => maps.onGoMob(mob.k)} title={t("map.seemob")}>↗</button>}
               </li>
             ))}
           </ul>
         </>
       )}
+      {g.m.some((x) => x[0] < 0) && <p className="desc note">{t("map.nomodel")}</p>}
       {g.unk > 0 && <p className="desc note">{t("map.unk", { n: g.unk })}</p>}
       <p className="desc note">{t("map.note")}</p>
     </section>
@@ -89,7 +95,7 @@ function MapDetails({ g, lists, maps, t }) {
 export default function Details({ tab, catalog, lists, gear, sel, dress, onTry, lang, t, maps }) {
   if (tab === "map") {
     const g = lists.map.find((x) => x.k === sel.map);
-    return g && maps ? <MapDetails g={g} lists={lists} maps={maps} t={t} /> : null;
+    return g && maps ? <MapDetails key={g.id} g={g} maps={maps} t={t} lang={lang} /> : null;
   }
   if (tab === "monster") {
     const g = lists.monster.find((x) => x.k === sel.monster);

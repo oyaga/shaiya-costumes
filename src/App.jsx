@@ -153,11 +153,16 @@ export default function App() {
     : null), [mobs, li]);
 
   // mapas: maps.json (índice) + nomes do idioma; a busca acha pelo nome em qualquer idioma, pelo número e pelas regiões
+  // id do monstro (do grupo em monsters.json; negativo = tem nome e nível no cliente mas não tem modelo 3D, vem de maps.json)
+  const mobById = useMemo(() => {
+    const o = mobL ? Object.fromEntries(mobL.map((g) => [g.id, { ...g, lv: [Math.min(...g.v.map((v) => v[1])), Math.max(...g.v.map((v) => v[1]))] }])) : {};
+    if (maps) for (const [id, names, lv, hp, exp, el] of maps.x) o[id] = { id, k: null, name: names[li] || names[0], el, v: [[id, lv, hp, exp]], lv: [lv, lv], hay: norm(names.join(" ")) };
+    return o;
+  }, [mobL, maps, li]);
   const mapL = useMemo(() => (maps
-    ? maps.maps.map((m, k) => ({ ...m, k, cat: "map", name: mapName(m, t, li), hay: norm([...(m.name || []), String(m.id), ...m.reg, "mapa map"].join(" ")) }))
-    : null), [maps, li, t]);
+    ? maps.maps.map((m, k) => ({ ...m, k, cat: "map", name: mapName(m, t, li), hay: norm([...(m.name || []), String(m.id), ...m.reg, "mapa map"].join(" ")) + " " + m.m.map((x) => (mobById[x[0]] || {}).hay || "").join(" ") }))
+    : null), [maps, li, t, mobById]);
   const mapsById = useMemo(() => (mapL ? Object.fromEntries(mapL.map((m) => [m.id, m])) : {}), [mapL]);
-  const mobById = useMemo(() => (mobL ? Object.fromEntries(mobL.map((g) => [g.id, { ...g, lv: [Math.min(...g.v.map((v) => v[1])), Math.max(...g.v.map((v) => v[1]))] }])) : {}), [mobL]);
   // monstro → mapas onde aparece, do que tem mais para o que tem menos
   const appears = useMemo(() => {
     const o = {};
