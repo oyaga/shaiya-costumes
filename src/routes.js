@@ -8,13 +8,13 @@ import { norm } from "./catalog.js";
 export const MAIN_SITE = "https://shaiya-costumes.vercel.app/";
 
 export const ROUTE_LANGS = ["pt", "es", "en"];
-export const ROUTE_CATS = ["costume", "set", "weapon", "mount", "wing", "pet", "monster"];
+export const ROUTE_CATS = ["costume", "set", "weapon", "mount", "wing", "pet", "monster", "map"];
 export const CAT_SEG = {
-  pt: { costume: "fantasia", set: "set", weapon: "arma", mount: "montaria", wing: "asa", pet: "pet", monster: "monstro" },
-  es: { costume: "disfraz", set: "conjunto", weapon: "arma", mount: "montura", wing: "alas", pet: "mascota", monster: "monstruo" },
-  en: { costume: "costume", set: "set", weapon: "weapon", mount: "mount", wing: "wings", pet: "pet", monster: "monster" },
+  pt: { costume: "fantasia", set: "set", weapon: "arma", mount: "montaria", wing: "asa", pet: "pet", monster: "monstro", map: "mapa" },
+  es: { costume: "disfraz", set: "conjunto", weapon: "arma", mount: "montura", wing: "alas", pet: "mascota", monster: "monstruo", map: "mapa" },
+  en: { costume: "costume", set: "set", weapon: "weapon", mount: "mount", wing: "wings", pet: "pet", monster: "monster", map: "map" },
 };
-const ONE_ID = ["set", "monster"];   // id de um número só (set = id do set; monstro = id no DBMonsterData)
+const ONE_ID = ["set", "monster", "map"];   // id de um número só (set = id do set; monstro = id no DBMonsterData; mapa = número do mapa)
 
 export const langPrefix = (lang) => (lang === "pt" ? "" : lang + "/");
 

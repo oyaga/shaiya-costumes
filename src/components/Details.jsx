@@ -1,4 +1,4 @@
-import { statChips, synText, charCode, CLASSES, itemFits, mobVariant, isTransform } from "../catalog.js";
+import { statChips, synText, charCode, CLASSES, itemFits, mobVariant, isTransform, mapSummary, lvText } from "../catalog.js";
 import Icon from "./Icon.jsx";
 
 // Título do visual; com o ícone oficial do cliente ao lado, quando há
@@ -43,8 +43,54 @@ function Synergy({ syn, t }) {
   );
 }
 
+// Monstro ↔ mapa: linhas que levam de um ao outro (maps = { byId, mobById, appears, hl, onHl, onGoMap, onGoMob })
+function MapDetails({ g, lists, maps, t }) {
+  const mobs = g.m.map(([id, c, a]) => [maps.mobById[id], c, a]).filter((x) => x[0]);
+  const to = g.to.filter((id) => id !== g.id && maps.byId[id]);
+  return (
+    <section className="details" aria-live="polite">
+      <div className="label">{t("cat.map")} · #{g.id}</div>
+      <h2>{g.name}</h2>
+      <div className="chips">
+        <span className="stat">{mapSummary(g, t)}</span>
+        {g.na > 0 && <span className="stat">{t("map.areas", { n: g.na })}</span>}
+        {g.nn > 0 && <span className="stat">{t("map.npcs", { n: g.nn })}</span>}
+      </div>
+      {g.reg.length > 0 && <><div className="label">{t("map.regions")}</div><div className="chips">{g.reg.map((r) => <span key={r} className="chip">{r}</span>)}</div></>}
+      {to.length > 0 && (
+        <>
+          <div className="label">{t("map.portals")}</div>
+          <div className="chips">{to.map((id) => <button key={id} type="button" className="chip link" onClick={() => maps.onGoMap(maps.byId[id].k, null)}>→ {maps.byId[id].name}</button>)}</div>
+        </>
+      )}
+      {mobs.length > 0 && (
+        <>
+          <div className="label">{t("map.monsters")}</div>
+          <ul className="itemlist maplist">
+            {mobs.map(([mob, c, a]) => (
+              <li key={mob.id} className={maps.hl === mob.id ? "on" : ""}>
+                <button type="button" className="rowbtn" aria-pressed={maps.hl === mob.id} onClick={() => maps.onHl(maps.hl === mob.id ? null : mob.id)}>
+                  <span className="nm">{mob.name}</span>
+                  <span className="sub">{lvText(mob.lv[0], mob.lv[1], t)} · {t("map.mob_row", { a, c })}</span>
+                </button>
+                <button type="button" className="mini" onClick={() => maps.onGoMob(mob.k)} title={t("map.seemob")}>↗</button>
+              </li>
+            ))}
+          </ul>
+        </>
+      )}
+      {g.unk > 0 && <p className="desc note">{t("map.unk", { n: g.unk })}</p>}
+      <p className="desc note">{t("map.note")}</p>
+    </section>
+  );
+}
+
 // catalog = lista localizada (mesmos índices k do catálogo bruto); gear = sets/armas localizados; lang = números
-export default function Details({ tab, catalog, lists, gear, sel, dress, onTry, lang, t }) {
+export default function Details({ tab, catalog, lists, gear, sel, dress, onTry, lang, t, maps }) {
+  if (tab === "map") {
+    const g = lists.map.find((x) => x.k === sel.map);
+    return g && maps ? <MapDetails g={g} lists={lists} maps={maps} t={t} /> : null;
+  }
   if (tab === "monster") {
     const g = lists.monster.find((x) => x.k === sel.monster);
     if (!g) return null;
@@ -60,6 +106,22 @@ export default function Details({ tab, catalog, lists, gear, sel, dress, onTry, 
             <li key={v[0]}><div className="ithead"><code>{v[0]}</code><span>{mobVariant(v, t, lang)}</span></div></li>
           ))}
         </ul>
+        {maps && maps.appears[g.id] && (
+          <>
+            <div className="label">{t("map.appears")}</div>
+            <ul className="itemlist maplist">
+              {maps.appears[g.id].map(([m, c, a]) => (
+                <li key={m.id}>
+                  <button type="button" className="rowbtn" onClick={() => maps.onGoMap(m.k, g.id)}>
+                    <span className="nm">{m.name}</span>
+                    <span className="sub">{t("map.mob_row", { a, c })}</span>
+                  </button>
+                  <button type="button" className="mini" onClick={() => maps.onGoMap(m.k, g.id)} title={t("map.seeon")}>↗</button>
+                </li>
+              ))}
+            </ul>
+          </>
+        )}
         <div className="model">{t("det.model", { m: g.f.replace(".json", ""), a: g.anims.length ? g.anims.map((a) => t("mol." + a)).join(", ") : t("det.noanim") })}</div>
       </section>
     );

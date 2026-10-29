@@ -1,5 +1,5 @@
 // Constantes e helpers do catálogo (sem React, sem three). Rótulos vêm de i18n.js (t).
-export const TABS = ["dress", "costume", "set", "weapon", "mount", "wing", "pet", "monster"];
+export const TABS = ["dress", "costume", "set", "weapon", "mount", "wing", "pet", "monster", "map"];
 export const RACES = ["hu", "el", "vi", "de"];
 export const SEXES = ["m", "f"];
 // Modelo do personagem por raça → corpo → gênero. Cada raça tem 2 corpos e a CLASSE escolhe qual: corpo 0 =
@@ -105,6 +105,15 @@ export function mobSummary(g, t) {
 export function mobVariant(v, t, lang) {
   const n = (x) => x.toLocaleString(lang);
   return [t("mob.lv", { v: v[1] }), t("mob.hp", { v: n(v[2]) }), v[3] ? t("mob.exp", { v: n(v[3]) }) : null].filter(Boolean).join(" · ");
+}
+
+// Mapa (public/data/maps.json): t = "f" (mapa aberto, com terreno) ou "d" (masmorra/instância); lv = faixa de nível dos
+// monstros que nascem nele; m = [[id do monstro, quantidade no mapa, áreas]]. Sem nome no cliente: "Mapa N".
+export const mapName = (m, t, li) => (m.name ? m.name[li] || m.name[0] : t("map.n", { id: m.id }));
+export const lvText = (a, b, t) => (a === b ? t("mob.lv", { v: a }) : t("mob.lvs", { a, b }));
+export function mapSummary(m, t) {
+  const lv = m.lv ? lvText(m.lv[0], m.lv[1], t) : null;
+  return [t(m.t === "f" ? "map.field" : "map.inst"), lv].filter(Boolean).join(" · ");
 }
 
 // Bônus de set ("Synergy" do cliente) por quantidade de peças: {str: 70, hp: 500, patk: 5…} → textos.

@@ -11,7 +11,7 @@ import fs from "node:fs";
 import path from "node:path";
 import { fileURLToPath } from "node:url";
 import { makeT, HTML_LANG } from "../src/i18n.js";
-import { statChips, mobSummary, mobVariant, visualName, LANG_IX } from "../src/catalog.js";
+import { statChips, mobSummary, mobVariant, visualName, LANG_IX, mapName, mapSummary, lvText } from "../src/catalog.js";
 import { MAIN_SITE, ROUTE_LANGS, ROUTE_CATS, itemId, itemPath, catPath, homePath } from "../src/routes.js";
 
 const repo = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "..");
@@ -28,6 +28,7 @@ const catalog = readJSON("catalog.json");
 const gear = readJSON("gear.json");
 const TR = { pt: null, es: readJSON("i18n/es.json"), en: readJSON("i18n/en.json") };
 const MOBS = fs.existsSync(path.join(dist, "data", "monsters.json")) ? readJSON("monsters.json").mobs : [];
+const MAPS = fs.existsSync(path.join(dist, "data", "maps.json")) ? readJSON("maps.json").maps : [];
 const TPL = fs.readFileSync(path.join(dist, "index.html"), "utf8");
 const HAS_OG = fs.existsSync(path.join(dist, "og.jpg"));   // imagem de compartilhamento (public/og.jpg, 1200x630)
 
@@ -65,9 +66,11 @@ function buildLists(lang) {
     wing: other.filter((g) => g.cat === "wing"),
     pet: other.filter((g) => g.cat === "pet"),
     monster: MOBS.map((g) => ({ cat: "monster", raw: g, name: g.name[li] || g.name[0], desc: "", items: [] })),
+    map: MAPS.map((g) => ({ cat: "map", raw: g, name: mapName(g, makeT(lang), li), desc: "", items: [] })),
   };
   for (const c of ROUTE_CATS) {
-    out[c].sort((x, y) => sortKey(x).localeCompare(sortKey(y), lang, { sensitivity: "base" }));
+    if (c === "map") out[c].sort((x, y) => x.raw.id - y.raw.id);   // mapas: pela ordem do jogo
+    else out[c].sort((x, y) => sortKey(x).localeCompare(sortKey(y), lang, { sensitivity: "base" }));
     for (const g of out[c]) {
       g.id = itemId(c, g.raw);
       g.rel = itemPath(lang, c, g.slug || g.name, g.id);
@@ -77,6 +80,8 @@ function buildLists(lang) {
 }
 
 const LISTS = Object.fromEntries(ROUTE_LANGS.map((l) => [l, buildLists(l)]));
+const MOBBY = Object.fromEntries(ROUTE_LANGS.map((l) => [l, Object.fromEntries(LISTS[l].monster.map((g) => [g.raw.id, g]))]));
+const MAPBY = Object.fromEntries(ROUTE_LANGS.map((l) => [l, Object.fromEntries(LISTS[l].map.map((g) => [g.raw.id, g]))]));
 // id → endereço em cada idioma (links alternativos)
 const ALT = Object.fromEntries(ROUTE_CATS.map((c) => [c, {}]));
 for (const l of ROUTE_LANGS) for (const c of ROUTE_CATS) for (const g of LISTS[l][c]) (ALT[c][g.id] ||= {})[l] = g.rel;
@@ -147,13 +152,14 @@ for (const lang of ROUTE_LANGS) {
     const catAlts = Object.fromEntries(ROUTE_LANGS.map((l) => [l, catPath(l, c)]));
 
     // categoria: todos os itens
+    const catDesc = t(c === "map" ? "seo.cat_desc_map" : "seo.cat_desc", { tab: t("tab." + c), n: list.length });
     render({
       lang, rel: catCrumb.rel,
-      title: t("seo.cat_title", { tab: t("tab." + c) }),
-      desc: t("seo.cat_desc", { tab: t("tab." + c), n: list.length }),
+      title: t(c === "map" ? "seo.cat_title_map" : "seo.cat_title", { tab: t("tab." + c) }),
+      desc: catDesc,
       alts: catAlts, crumbs: [home, catCrumb],
       body: `<div class="wrap seo"><header>${crumbHtml([home, catCrumb])}<h1>${esc(t("tab." + c))}</h1>`
-        + `<p class="lede">${esc(t("seo.cat_desc", { tab: t("tab." + c), n: list.length }))}</p></header>`
+        + `<p class="lede">${esc(catDesc)}</p></header>`
         + `<ul class="cols">${list.map((g) => `<li><a href="${esc(g.rel)}">${esc(g.name)}</a></li>`).join("")}</ul>`
         + `${langLinks(t, catAlts, lang)}</div>`,
     });
@@ -162,28 +168,33 @@ for (const lang of ROUTE_LANGS) {
     // item
     list.forEach((g, i) => {
       const crumbs = [home, catCrumb, { name: g.name, rel: g.rel }];
-      const gearCat = c === "set" || c === "weapon", isMob = c === "monster";
-      const versions = isMob
+      const gearCat = c === "set" || c === "weapon", isMob = c === "monster", isMap = c === "map";
+      const mobLinks = isMap ? g.raw.m.map(([id, n, a]) => [MOBBY[lang][id], n, a]).filter((x) => x[0]) : [];
+      const versions = isMap
+        ? mobLinks.map(([mob, n, a]) => `<li><a href="${esc(mob.rel)}">${esc(mob.name)}</a> — ${esc(lvText(...mob.raw.v.reduce((r, v) => [Math.min(r[0], v[1]), Math.max(r[1], v[1])], [999, 0]), t))} · ${esc(t("map.mob_row", { a, c: n }))}</li>`).join("")
+          + g.raw.to.filter((id) => id !== g.raw.id && MAPBY[lang][id]).map((id) => `<li><a href="${esc(MAPBY[lang][id].rel)}">→ ${esc(MAPBY[lang][id].name)}</a></li>`).join("")
+        : isMob
         ? g.raw.v.map((v) => `<li>${esc(mobVariant(v, t, lang))}</li>`).join("")
         : g.items.map((x) => {
           const chips = statChips(x[3], x[0], t, gearCat).map((s) => s.text).join(" · ");
           return `<li>${esc(x[2])}${chips ? ` — ${esc(chips)}` : ""}</li>`;
         }).join("");
-      const gdesc = isMob ? `${mobSummary(g.raw, t)}. ${g.raw.el ? t("mob.el", { e: t("el." + g.raw.el) }) : t("mob.noel")}.` : g.desc;
+      const gdesc = isMap ? `${mapSummary(g.raw, t)}.${g.raw.reg.length ? ` ${t("map.regions")}: ${g.raw.reg.slice(0, 8).join(", ")}.` : ""}`
+        : isMob ? `${mobSummary(g.raw, t)}. ${g.raw.el ? t("mob.el", { e: t("el." + g.raw.el) }) : t("mob.noel")}.` : g.desc;
       const near = [];
       for (let d = 1; near.length < Math.min(NEIGHBORS, list.length - 1); d++) {
         near.push(list[(i + d) % list.length]);
         if (near.length < Math.min(NEIGHBORS, list.length - 1)) near.push(list[(i - d + list.length) % list.length]);
       }
-      const intro = t(isMob ? "seo.item_desc_mob" : "seo.item_desc", { name: g.name, cat: t("cat." + c) });
+      const intro = t(isMap ? "seo.item_desc_map" : isMob ? "seo.item_desc_mob" : "seo.item_desc", { name: g.name, cat: t("cat." + c) });
       const desc = clip(oneLine(`${intro} ${oneLine(gdesc)}`), 158);
       const alts = ALT[c][g.id];
       render({
-        lang, rel: g.rel, title: t("seo.item_title", { name: g.name, cat: t("cat." + c) }), desc, alts, crumbs,
+        lang, rel: g.rel, title: t(isMap ? "seo.item_title_map" : "seo.item_title", { name: g.name, cat: t("cat." + c) }), desc, alts, crumbs,
         body: `<div class="wrap seo"><header>${crumbHtml(crumbs)}<h1>${esc(g.name)}</h1>`
           + `<p class="lede">${esc(intro)}</p></header>`
           + (gdesc ? `<p class="desc">${esc(gdesc)}</p>` : "")
-          + `<section><h2>${esc(t(isMob ? "mob.variants" : "seo.versions"))}</h2>${isMob ? `<p>${esc(t("mob.note"))}</p>` : ""}<ul>${versions}</ul></section>`
+          + `<section><h2>${esc(t(isMap ? "map.monsters" : isMob ? "mob.variants" : "seo.versions"))}</h2>${isMob ? `<p>${esc(t("mob.note"))}</p>` : isMap ? `<p>${esc(t("map.note"))}</p>` : ""}<ul>${versions}</ul></section>`
           + `<section><h2>${esc(t("seo.more", { tab: t("tab." + c) }))}</h2><ul class="cols">`
           + near.map((n) => `<li><a href="${esc(n.rel)}">${esc(n.name)}</a></li>`).join("")
           + `</ul><p><a href="${esc(catCrumb.rel)}">${esc(t("seo.all"))}</a></p></section>`

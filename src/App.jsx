@@ -1,5 +1,5 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
-import { TABS, charCode, raceClasses, LANG_IX, CLASSES, gearFits, norm, visualName, isTransform } from "./catalog.js";
+import { TABS, charCode, raceClasses, LANG_IX, CLASSES, gearFits, norm, visualName, isTransform, mapName } from "./catalog.js";
 import { DATA_BASE, DATA_DATE, REPO_URL, ROOT_PATH } from "./config.js";
 import { LANGS, HTML_LANG, makeT, initialLang, saveLang } from "./i18n.js";
 import { ROUTE_CATS, parseRoute, itemId, itemPath, catPath, homePath } from "./routes.js";
@@ -11,10 +11,11 @@ import DyePanel from "./components/DyePanel.jsx";
 import Details from "./components/Details.jsx";
 import RaceSex from "./components/RaceSex.jsx";
 import Seg from "./components/Seg.jsx";
+import MapView from "./components/MapView.jsx";
 
 const RIDER_TABS = ["costume", "set", "weapon", "mount", "wing"];   // abas que mostram o item num personagem (raça/gênero à escolha)
 const GEAR_TABS = ["set", "weapon"];                                // vêm de gear.json (carregado à parte)
-const LAZY_TABS = [...GEAR_TABS, "monster"];                        // + monsters.json: listas que chegam depois do catálogo
+const LAZY_TABS = [...GEAR_TABS, "monster", "map"];                 // + monsters.json e maps.json: listas que chegam depois do catálogo
 const DYE_CATS = ["costume", "wing", "pet", "mount"];
 const reducedMotion = () => typeof matchMedia === "function" && matchMedia("(prefers-reduced-motion: reduce)").matches;
 const getJSON = (path) => fetch(DATA_BASE + path).then((r) => { if (!r.ok) throw new Error("HTTP " + r.status); return r.json(); });
@@ -35,6 +36,8 @@ export default function App() {
   const [data, setData] = useState(null);
   const [gear, setGear] = useState(null);       // gear.json: sets e armas (null = carregando, false = falhou)
   const [mobs, setMobs] = useState(null);       // monsters.json: monstros (null = carregando, false = falhou)
+  const [maps, setMaps] = useState(null);       // maps.json: mapas (null = carregando, false = falhou)
+  const [hl, setHl] = useState(null);           // monstro (id do grupo) destacado no mapa
   const [error, setError] = useState(null);
   const [tab, setTab] = useState("dress");
   const [q, setQ] = useState("");
@@ -44,8 +47,8 @@ export default function App() {
   // comparar: dois lados A e B lado a lado; o lado "ativo" recebe os cliques da lista, do provador, da pintura e da raça/classe.
   const [cmp, setCmp] = useState(false);
   const [side, setSide] = useState("A");
-  const [sel, setSel] = useState({ costume: 0, set: null, weapon: null, mount: null, wing: null, pet: null, monster: null });   // seleção das abas de catálogo
-  const [selB, setSelB] = useState({ costume: 0, set: null, weapon: null, mount: null, wing: null, pet: null, monster: null });
+  const [sel, setSel] = useState({ costume: 0, set: null, weapon: null, mount: null, wing: null, pet: null, monster: null, map: null });   // seleção das abas de catálogo
+  const [selB, setSelB] = useState({ costume: 0, set: null, weapon: null, mount: null, wing: null, pet: null, monster: null, map: null });
   // Sem ?cls=/?sex= no endereço, o provador abre com classe e gênero sorteados (e visual sorteado, ver abaixo);
   // com eles, abre exatamente na classe/gênero pedidos.
   const initialDress = () => {
@@ -83,7 +86,7 @@ export default function App() {
         setDress((s) => ({ ...s, ...dressSeed }));
         setDressB((s) => ({ ...s, ...dressSeed }));
         const first = (c) => (byCat(c)[0] ? byCat(c)[0].k : null);
-        const next = { costume: 0, set: null, weapon: null, mount: first("mount"), wing: first("wing"), pet: first("pet"), monster: null };
+        const next = { costume: 0, set: null, weapon: null, mount: first("mount"), wing: first("wing"), pet: first("pet"), monster: null, map: null };
         const h = location.hash.slice(1), m = h.match(/^(costume|set|weapon|mount|wing|pet)-(\d+)$/);
         if (m) { setTab(m[1]); next[m[1]] = +m[2]; }
         else if (TABS.includes(h)) setTab(h);
@@ -104,6 +107,7 @@ export default function App() {
     getJSON("i18n/search.json").then(setSearch).catch(() => { /* busca fica só em PT */ });
     getJSON("gear.json").then((g) => { if (!dead) setGear(g); }).catch(() => { if (!dead) setGear(false); });
     getJSON("monsters.json").then((j) => { if (!dead) setMobs(j); }).catch(() => { if (!dead) setMobs(false); });
+    getJSON("maps.json").then((j) => { if (!dead) setMaps(j); }).catch(() => { if (!dead) setMaps(false); });
     return () => { dead = true; };
   }, []);
 
@@ -148,6 +152,20 @@ export default function App() {
     ? mobs.mobs.map((g, k) => ({ ...g, k, cat: "monster", name: g.name[li] || g.name[0], hay: norm(g.name.join(" ")) }))
     : null), [mobs, li]);
 
+  // mapas: maps.json (índice) + nomes do idioma; a busca acha pelo nome em qualquer idioma, pelo número e pelas regiões
+  const mapL = useMemo(() => (maps
+    ? maps.maps.map((m, k) => ({ ...m, k, cat: "map", name: mapName(m, t, li), hay: norm([...(m.name || []), String(m.id), ...m.reg, "mapa map"].join(" ")) }))
+    : null), [maps, li, t]);
+  const mapsById = useMemo(() => (mapL ? Object.fromEntries(mapL.map((m) => [m.id, m])) : {}), [mapL]);
+  const mobById = useMemo(() => (mobL ? Object.fromEntries(mobL.map((g) => [g.id, { ...g, lv: [Math.min(...g.v.map((v) => v[1])), Math.max(...g.v.map((v) => v[1]))] }])) : {}), [mobL]);
+  // monstro → mapas onde aparece, do que tem mais para o que tem menos
+  const appears = useMemo(() => {
+    const o = {};
+    if (mapL) for (const m of mapL) for (const [id, c, a] of m.m) (o[id] ||= []).push([m, c, a]);
+    for (const id in o) o[id].sort((x, y) => y[1] - x[1]);
+    return o;
+  }, [mapL]);
+
   // ordem alfabética do idioma escolhido (ignora o prefixo [SP]/(SP))
   const lists = useMemo(() => {
     if (!loc) return null;
@@ -164,20 +182,21 @@ export default function App() {
       wing: sorted(loc.catalog.filter((g) => g.cat === "wing")),
       pet: sorted(loc.catalog.filter((g) => g.cat === "pet")),
       monster: mobL ? sorted(mobL) : [],
+      map: mapL || [],
     };
-  }, [loc, gearL, mobL, lang]);
+  }, [loc, gearL, mobL, mapL, lang]);
 
   // set/arma/monstro do endereço: abre quando o gear.json / monsters.json chega (null = carregando, false = falhou)
   useEffect(() => {
     const r = routeRef.current;
     if (!r || !LAZY_TABS.includes(r.cat)) return;
-    const src = r.cat === "monster" ? mobs : gear;
+    const src = r.cat === "monster" ? mobs : r.cat === "map" ? maps : gear;
     if (src == null) return;
     routeRef.current = null;
-    const arr = !src ? [] : r.cat === "set" ? src.sets : r.cat === "weapon" ? src.weapons : src.mobs;
+    const arr = !src ? [] : r.cat === "set" ? src.sets : r.cat === "weapon" ? src.weapons : r.cat === "map" ? src.maps : src.mobs;
     const k = r.id ? arr.findIndex((g) => itemId(r.cat, g) === r.id) : -1;
     if (k >= 0) setSel((s) => ({ ...s, [r.cat]: k }));
-  }, [gear, mobs]);
+  }, [gear, mobs, maps]);
 
   // aba de set/arma/monstro sem seleção (antes da lista chegar): escolhe o primeiro da lista. Confere o estado
   // ATUAL (não o do render) para não passar por cima do item que o endereço acabou de abrir.
@@ -199,10 +218,10 @@ export default function App() {
       const g = sel[tab] != null ? lists[tab].find((x) => x.k === sel[tab]) : null;
       if (g) {
         path = itemPath(lang, tab, g.slug || g.name, itemId(tab, g));
-        title = t("seo.item_title", { name: g.name, cat: t("cat." + tab) });
+        title = t(tab === "map" ? "seo.item_title_map" : "seo.item_title", { name: g.name, cat: t("cat." + tab) });
       } else {
         path = catPath(lang, tab);
-        title = t("seo.cat_title", { tab: t("tab." + tab) });
+        title = t(tab === "map" ? "seo.cat_title_map" : "seo.cat_title", { tab: t("tab." + tab) });
       }
     }
     history.replaceState(null, "", ROOT_PATH + path + location.search + (tab === "dress" ? "#dress" : ""));
@@ -224,6 +243,7 @@ export default function App() {
       const g = data.catalog[selX.pet];
       return g ? { kind: "single", cat: "pet", file: "m/" + g.f } : null;
     }
+    if (tab === "map") return null;   // o mapa tem a própria vista (MapView), sem 3D
     if (tab === "monster") {   // como o pet: o modelo sozinho (mob/NNN.json, um arquivo por modelo do Monster.MON)
       const g = mobs && selX.monster != null ? mobs.mobs[selX.monster] : null;
       return g ? { kind: "single", cat: "monster", file: "mob/" + g.f } : null;
@@ -328,9 +348,15 @@ export default function App() {
   const onDye = useCallback((cat, p) => setCurDye((s) => ({ ...s, [cat]: p })), [setCurDye]);
   const onSelect = useCallback((k) => setCurSel((s) => ({ ...s, [tab]: k })), [setCurSel, tab]);
 
-  const lazySrc = (c) => (c === "monster" ? mobs : gear);   // null = carregando, false = falhou
+  const lazySrc = (c) => (c === "monster" ? mobs : c === "map" ? maps : gear);   // null = carregando, false = falhou
+  // monstro ↔ mapa: "Ver no mapa" abre o mapa com o monstro destacado; "Ver monstro" faz o caminho de volta
+  const onGoMap = useCallback((k, gid) => { setTab("map"); setQ(""); setSel((s) => ({ ...s, map: k })); setHl(gid); }, []);
+  const onGoMob = useCallback((k) => { setTab("monster"); setQ(""); setSel((s) => ({ ...s, monster: k })); }, []);
+  const curMap = tab === "map" && mapL ? mapL.find((x) => x.k === curSel.map) : null;
+  const hlHere = curMap && hl != null && curMap.m.some((x) => x[0] === hl) ? hl : null;   // só destaca onde o monstro aparece
+  const mapsApi = { byId: mapsById, mobById, appears, hl: hlHere, onHl: setHl, onGoMap, onGoMob };
   const lazyWait = LAZY_TABS.includes(tab) && !lazySrc(tab);
-  const counts = Object.fromEntries(["costume", "set", "weapon", "mount", "wing", "pet", "monster"].map((c) => [c, LAZY_TABS.includes(c) && !lazySrc(c) ? "…" : lists ? lists[c].length : 0]));
+  const counts = Object.fromEntries(["costume", "set", "weapon", "mount", "wing", "pet", "monster", "map"].map((c) => [c, LAZY_TABS.includes(c) && !lazySrc(c) ? "…" : lists ? lists[c].length : 0]));
 
   return (
     <div className="wrap">
@@ -357,21 +383,29 @@ export default function App() {
                 ? <DressForm t={t} dress={curDress} lists={lists} gear={!!gear} onChange={onDress} />
                 : lazyWait
                   ? <p className="notice">{lazySrc(tab) === false
-                    ? t("load.error", { e: tab === "monster" ? "monsters.json" : "gear.json" })
-                    : t(tab === "monster" ? "load.mobs" : "load.gear")}</p>
+                    ? t("load.error", { e: tab === "monster" ? "monsters.json" : tab === "map" ? "maps.json" : "gear.json" })
+                    : t(tab === "monster" ? "load.mobs" : tab === "map" ? "load.maps" : "load.gear")}</p>
                   : <List t={t} tab={tab} rows={rows} cur={curSel[tab]} onSelect={onSelect} />}
             </div>
             <div className="viewcol">
-              <div className={cmp ? "stages two" : "stages"}>
-                <Stage t={t} spec={spec} motion={motion} spin={spin} dye={dye} anims={scene && scene.anims} onMotion={setMotion} onSpin={setSpin} onScene={setScene} onMasks={setMasks} side={cmp ? "A" : null} active={cmp && side === "A"} onActivate={cmp ? () => setSide("A") : undefined} />
-                {cmp && <Stage t={t} spec={specB} motion={motion} spin={spin} dye={dyeB} anims={sceneB && sceneB.anims} onMotion={setMotion} onSpin={setSpin} onScene={setSceneB} onMasks={setMasksB} side="B" active={side === "B"} onActivate={() => setSide("B")} />}
-              </div>
-              {cmp && <p className="cmphint">{t(side === "B" ? "cmp.hint_b" : "cmp.hint_a")}</p>}
+              {tab === "map"
+                ? (curMap
+                  ? <MapView key={curMap.id} m={curMap} hl={hlHere} mobName={(id) => (mobById[id] ? mobById[id].name : "?")} mapsById={mapsById} onGoMap={(k) => onGoMap(k, null)} onHl={setHl} t={t} li={li} />
+                  : <div className="mapstage" />)
+                : (
+                  <>
+                    <div className={cmp ? "stages two" : "stages"}>
+                      <Stage t={t} spec={spec} motion={motion} spin={spin} dye={dye} anims={scene && scene.anims} onMotion={setMotion} onSpin={setSpin} onScene={setScene} onMasks={setMasks} side={cmp ? "A" : null} active={cmp && side === "A"} onActivate={cmp ? () => setSide("A") : undefined} />
+                      {cmp && <Stage t={t} spec={specB} motion={motion} spin={spin} dye={dyeB} anims={sceneB && sceneB.anims} onMotion={setMotion} onSpin={setSpin} onScene={setSceneB} onMasks={setMasksB} side="B" active={side === "B"} onActivate={() => setSide("B")} />}
+                    </div>
+                    {cmp && <p className="cmphint">{t(side === "B" ? "cmp.hint_b" : "cmp.hint_a")}</p>}
+                  </>
+                )}
               {RIDER_TABS.includes(tab) && !(tab === "mount" && isTransform(data.catalog[curSel.mount])) && <RaceSex t={t} dress={curDress} onDress={onDress} />}
             </div>
             <aside className="sidecol">
               {dyeTargets.length > 0 && <DyePanel t={t} targets={dyeTargets} target={target} onTarget={setDyeTarget} dye={curDye} onChange={onDye} hasMask={hasMask} />}
-              {!lazyWait && <Details t={t} lang={lang} tab={tab} catalog={loc.catalog} lists={lists} gear={gearL} sel={curSel} dress={curDress} onTry={onTry} />}
+              {!lazyWait && <Details t={t} lang={lang} tab={tab} catalog={loc.catalog} lists={lists} gear={gearL} sel={curSel} dress={curDress} onTry={onTry} maps={mapsApi} />}
             </aside>
           </div>
         </>
