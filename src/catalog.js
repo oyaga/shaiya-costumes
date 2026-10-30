@@ -113,7 +113,7 @@ export const mapName = (m, t, li) => (m.name ? m.name[li] || m.name[0] : t("map.
 export const lvText = (a, b, t) => (a === b ? t("mob.lv", { v: a }) : t("mob.lvs", { a, b }));
 export function mapSummary(m, t) {
   const lv = m.lv ? lvText(m.lv[0], m.lv[1], t) : null;
-  return [t(m.t === "f" ? "map.field" : "map.inst"), lv].filter(Boolean).join(" · ");
+  return [m.fac ? t("fac." + m.fac) : null, t(m.t === "f" ? "map.field" : "map.inst"), lv].filter(Boolean).join(" · ");
 }
 
 // Bônus de set ("Synergy" do cliente) por quantidade de peças: {str: 70, hp: 500, patk: 5…} → textos.
